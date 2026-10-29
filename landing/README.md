@@ -267,10 +267,16 @@ The landing page features a download button in the navigation header, hero secti
 1. Push your code to your Git provider (GitHub, GitLab, or Bitbucket).
 2. Import the project into the [Vercel Dashboard](https://vercel.com/new).
 3. Set the **Root Directory** to `landing`.
-4. In **Environment Variables**, add:
+4. In **Build & Development Settings**:
+   - **Framework Preset**: Ensure `Next.js` is selected.
+   - **Build Command**: Leave Override toggle **OFF** (runs default `next build`).
+   - **Output Directory**: Leave Override toggle **OFF** (Vercel automatically detects `.next`).
+     > [!IMPORTANT]
+     > Do **NOT** enable the Override toggle for Output Directory or type `"default"`. Typing `"default"` causes Vercel to look for a non-existent `/landing/default` folder and fail with `[NEXT_OUTPUT_DIR_MISSING]`. If the toggle is already enabled, toggle it **OFF**, or set the value explicitly to `.next`.
+5. In **Environment Variables**, add:
    - `NEXT_PUBLIC_SITE_URL`: Your custom production domain (e.g. `https://uplink.campus.edu`).
    - `NEXT_PUBLIC_ANDROID_DOWNLOAD_URL`: The direct link to your hosted release APK.
-5. Click **Deploy**. Vercel will automatically compile, optimize, and deploy the application to its global Edge network.
+6. Click **Deploy**. Vercel will automatically compile, optimize, and deploy the application to its global Edge network.
 
 ### Docker / Standalone Node.js Server
 

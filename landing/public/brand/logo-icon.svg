@@ -1,0 +1,11 @@
+﻿<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="40" height="40" rx="10" fill="#135BEC"/>
+  <!-- Circuit node / U-pathway representing connection and upward uplink -->
+  <path d="M12 11V22C12 26.4183 15.5817 30 20 30C24.4183 30 28 26.4183 28 22V11" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <!-- Central circuit connection trace -->
+  <path d="M20 18V9" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="20" cy="8" r="2.5" fill="white"/>
+  <!-- Side circuit nodes -->
+  <circle cx="12" cy="12" r="2" fill="white"/>
+  <circle cx="28" cy="12" r="2" fill="white"/>
+</svg>

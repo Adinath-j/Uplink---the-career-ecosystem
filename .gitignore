@@ -22,3 +22,6 @@ build/
 Thumbs.db
 
 docs
+
+# Android release signing credentials
+android/keystore.properties

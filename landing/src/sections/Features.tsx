@@ -1,6 +1,9 @@
-﻿import React from "react";
+﻿
+import React from "react";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { cn } from "@/lib/utils";
+
 import {
   UserCheck,
   Briefcase,
@@ -10,81 +13,127 @@ import {
   ThumbsUp,
   Users,
   Bell,
+  ArrowUpRight,
 } from "lucide-react";
 
 const FEATURES = [
   {
     icon: UserCheck,
+    number: "01",
     title: "Student Academic Profiles",
     desc: "Complete academic records including institution, department, graduation year, CGPA, verified skill tags, projects, and certifications.",
+    featured: true,
   },
   {
     icon: Briefcase,
+    number: "02",
     title: "10 Opportunity Categories",
-    desc: "Full coverage across Internships, Jobs, Hackathons, Competitions, Scholarships, Workshops, Certifications, Training, Research, and Apprenticeships.",
+    desc: "Explore internships, jobs, hackathons, competitions, scholarships, workshops, certifications, training, research, and apprenticeships.",
+    featured: true,
   },
   {
     icon: Bookmark,
+    number: "03",
     title: "Offline-First Bookmarking",
-    desc: "Save opportunities to your local device with AsyncStorage persistence for instant retrieval even without an active internet connection.",
+    desc: "Save opportunities locally with AsyncStorage persistence for quick access, even without an active internet connection.",
   },
   {
     icon: Layers,
-    title: "Application Stage Tracking",
-    desc: "Auditable status lifecycles (Applied, In Review, Shortlisted, Offered, Closed) with explicit external-link handoffs.",
+    number: "04",
+    title: "Application Tracking",
+    desc: "Follow application progress through stages such as Applied, In Review, Shortlisted, Offered, and Closed, with explicit external-link handoffs.",
   },
   {
     icon: HelpCircle,
+    number: "05",
     title: "Structured Q&A Feed",
-    desc: "4 specialized feed views (For You, Unanswered, Trending, My Questions) with technical taxonomy tags and clean question detail views.",
+    desc: "Explore For You, Unanswered, Trending, and My Questions views, with technical topic tags and dedicated question details.",
   },
   {
     icon: ThumbsUp,
+    number: "06",
     title: "Same-Doubt Interaction",
-    desc: "Single-signal doubt escalation allowing students to surface shared blockers without creating duplicate forum questions.",
+    desc: "Help surface shared questions and academic blockers through a single-signal interaction, without creating duplicate discussions.",
   },
   {
     icon: Users,
-    title: "Verified Mentor Directory",
-    desc: "Directory of alumni and senior industry practitioners with verified graduation context and direct structured session booking requests.",
+    number: "07",
+    title: "Mentor Directory",
+    desc: "Discover alumni and industry professionals through profiles, domain specialties, and structured mentoring requests.",
+    featured: true,
   },
   {
     icon: Bell,
+    number: "08",
     title: "In-App Notifications",
-    desc: "Centralized notification feed for application status progressions, mentor session confirmations, and urgent campus updates.",
+    desc: "Stay informed about relevant application updates, mentor interactions, and campus announcements.",
+    featured: true,
   },
 ];
 
 export function Features() {
   return (
-    <section id="features" className="py-20 bg-uplink-bg-secondary border-t border-uplink-border">
+    <section
+      id="features"
+      className="relative overflow-hidden border-t border-uplink-border bg-white py-24 sm:py-28"
+    >
       <Container>
+
+        {/* Section heading */}
         <SectionHeading
-          badge="Product Capabilities"
-          title="Engineered for student professional acceleration"
-          description="Every capability in UPLINK is strictly mapped to genuine student needs, verified against the mobile application source code."
+          badge="PRODUCT CAPABILITIES"
+          title="Everything students need to move forward."
+          description="One connected ecosystem bringing academic profiles, career opportunities, knowledge sharing, and mentorship together."
         />
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {FEATURES.map((feat, idx) => {
-            const Icon = feat.icon;
+        {/* Feature grid */}
+        <div className="mt-14 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 lg:gap-5">
+
+          {FEATURES.map((feature) => {
+            const Icon = feature.icon;
+
             return (
-              <div
-                key={idx}
-                className="bg-white rounded-lg border border-uplink-border p-6 shadow-subtle hover:shadow-card transition-shadow duration-200"
+              <article
+                key={feature.number}
+                className={cn(
+                  "group relative overflow-hidden rounded-xl border border-uplink-border bg-white p-6 transition-all duration-300",
+                  "hover:-translate-y-1 hover:border-uplink-blue/30 hover:shadow-[0_12px_35px_-18px_rgba(19,91,236,0.22)]",
+                  feature.featured &&
+                  "lg:col-span-2 lg:grid lg:grid-cols-[auto_minmax(0,1fr)] lg:items-start lg:gap-6 lg:p-8"
+                )}
               >
-                <div className="w-10 h-10 rounded-md bg-uplink-blue-soft border border-uplink-blue/20 flex items-center justify-center text-uplink-blue mb-4">
-                  <Icon className="w-5 h-5" />
+                {/* Icon */}
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-uplink-blue/10 bg-uplink-blue-soft text-uplink-blue transition-colors duration-300 group-hover:bg-uplink-blue group-hover:text-white">
+                  <Icon className="h-5 w-5" strokeWidth={1.8} />
                 </div>
-                <h3 className="text-base font-bold text-uplink-text mb-2">
-                  {feat.title}
-                </h3>
-                <p className="text-xs leading-relaxed text-uplink-text-secondary">
-                  {feat.desc}
-                </p>
-              </div>
+
+                <div className={cn(feature.featured && "lg:min-w-0")}>
+                  {/* Number and arrow */}
+                  <div className="mb-5 mt-5 flex items-center justify-between lg:mt-0">
+                    <span className="text-xs font-semibold tracking-[0.16em] text-slate-400">
+                      {feature.number} / 08
+                    </span>
+
+                    <ArrowUpRight className="h-4 w-4 text-slate-300 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-uplink-blue" />
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="text-base font-bold leading-snug tracking-tight text-uplink-text sm:text-lg">
+                    {feature.title}
+                  </h3>
+
+                  {/* Description */}
+                  <p className="mt-3 text-sm leading-6 text-uplink-text-secondary">
+                    {feature.desc}
+                  </p>
+                </div>
+
+                {/* Subtle corner decoration */}
+                <div className="pointer-events-none absolute -bottom-12 -right-12 h-28 w-28 rounded-full border border-blue-100/70 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              </article>
             );
           })}
+
         </div>
       </Container>
     </section>

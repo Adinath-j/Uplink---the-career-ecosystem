@@ -141,16 +141,50 @@ export function ProductShowcaseInteractive() {
       </div>
 
       {/* Right Column: Phone Mockup */}
+
+      {/* RIGHT: Overlapping UPLINK phone mockups */}
       <div className="lg:col-span-5 flex justify-center">
-        <div className="relative">
-          {/* Subtle Ambient Glow */}
-          <div className="absolute -inset-4 rounded-full bg-uplink-blue/5 blur-2xl" />
-          <PhoneMockup
-            screenSrc={activeScreen.screenSrc}
-            alt={`${activeScreen.label} screen`}
-          />
+        <div className="relative w-full max-w-[560px]">
+
+          <div className="relative h-[480px] sm:h-[560px] lg:h-[620px]">
+
+            {/* Ambient glow */}
+            <div className="absolute left-1/2 top-1/2 h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-100/80 blur-3xl sm:h-[470px] sm:w-[470px]" />
+
+            {/* Background circuit decoration */}
+            <div className="absolute inset-0 rounded-full border border-dashed border-blue-200/70" />
+
+            {/* Explore Opportunities - rear phone */}
+            <div className="absolute right-[5%] top-[15%] z-10 w-[180px] rotate-[8deg] drop-shadow-2xl sm:right-[8%] sm:w-[225px] lg:w-[245px]">
+              <PhoneMockup
+                screenSrc="/screenshots/explore-jobs.svg"
+                alt="UPLINK Explore Opportunities screen"
+              />
+            </div>
+
+            {/* Discover Feed - foreground phone */}
+            <div className="absolute left-[7%] top-[5%] z-20 w-[195px] -rotate-[7deg] drop-shadow-2xl sm:left-[10%] sm:w-[240px] lg:w-[260px]">
+              <PhoneMockup
+                screenSrc="/screenshots/discover-feed.svg"
+                alt="UPLINK Discover Feed screen"
+              />
+            </div>
+
+            {/* Floating feature labels */}
+            <div className="absolute left-0 top-[12%] z-30 hidden rounded-2xl border border-white bg-white/90 px-4 py-3 shadow-lg backdrop-blur-md md:block">
+              <p className="text-sm font-semibold text-slate-900">Discover</p>
+              <p className="text-xs text-slate-500">Explore opportunities</p>
+            </div>
+
+            <div className="absolute bottom-[13%] right-0 z-30 hidden rounded-2xl border border-white bg-white/90 px-4 py-3 shadow-lg backdrop-blur-md md:block">
+              <p className="text-sm font-semibold text-slate-900">Connect</p>
+              <p className="text-xs text-slate-500">Learn with mentors</p>
+            </div>
+
+          </div>
         </div>
       </div>
+
     </div>
   );
 }

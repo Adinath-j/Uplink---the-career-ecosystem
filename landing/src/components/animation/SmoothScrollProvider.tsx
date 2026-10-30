@@ -37,6 +37,11 @@ export function SmoothScrollProvider({ children }: SmoothScrollProviderProps) {
       smoothWheel: true,
       wheelMultiplier: 1,
       touchMultiplier: 2,
+
+      // Enable smooth scrolling for anchor links
+      anchors: {
+        offset: 110,
+      },
     });
 
     lenisRef.current = lenis;

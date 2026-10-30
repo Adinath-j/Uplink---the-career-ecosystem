@@ -1,4 +1,12 @@
-﻿import React from "react";
+﻿
+import React from "react";
+import {
+  UserRound,
+  Search,
+  MessageCircle,
+  TrendingUp,
+} from "lucide-react";
+
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
@@ -6,58 +14,93 @@ const STEPS = [
   {
     step: "01",
     title: "Build Your Academic Profile",
-    desc: "Complete your student profile with institution credentials, department, graduation batch, CGPA, and verified skill tags.",
+    desc: "Complete your student profile with institution credentials, department, graduation batch, CGPA, and skill tags.",
+    icon: UserRound,
   },
   {
     step: "02",
-    title: "Discover Verified Opportunities",
-    desc: "Filter through 10 categories—from internships and hackathons to research roles—with remote, hybrid, and on-site options.",
+    title: "Discover Opportunities",
+    desc: "Explore opportunities across internships, hackathons, scholarships, research roles, and other student categories.",
+    icon: Search,
   },
   {
     step: "03",
-    title: "Learn & Connect with Mentors",
-    desc: "Resolve academic blockers in topic-organized Q&A and schedule 1-on-1 career guidance sessions with verified alumni mentors.",
+    title: "Learn & Connect",
+    desc: "Resolve academic doubts through structured Q&A and discover alumni and industry mentors for career guidance.",
+    icon: MessageCircle,
   },
   {
     step: "04",
-    title: "Track Applications & Grow",
-    desc: "Monitor your internal application progress across screening, interviews, and offers through a transparent status lifecycle.",
+    title: "Track & Grow",
+    desc: "Keep track of your applications and follow your progress throughout your professional journey.",
+    icon: TrendingUp,
   },
 ];
 
 export function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-20 bg-uplink-bg-secondary border-t border-uplink-border">
+    <section
+      id="how-it-works"
+      className="relative overflow-hidden border-t border-uplink-border bg-uplink-bg-secondary py-24 sm:py-28"
+    >
       <Container>
+
         <SectionHeading
-          badge="The Student Journey"
-          title="A clear, structured path from campus to industry"
-          description="UPLINK guides students through four continuous phases of academic verification, opportunity discovery, peer learning, and professional placement."
+          badge="HOW IT WORKS"
+          title="Four steps. One connected journey."
+          description="From building your professional profile to discovering opportunities, learning with peers and connecting with mentors."
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 relative">
-          {STEPS.map((s, idx) => (
-            <div
-              key={idx}
-              className="bg-white rounded-lg border border-uplink-border p-6 shadow-subtle flex flex-col justify-between relative z-10 hover:border-uplink-blue/50 transition-colors"
-            >
-              <div>
-                <span className="text-3xl font-extrabold text-uplink-blue/20 font-mono">
-                  {s.step}
-                </span>
-                <h3 className="text-lg font-bold text-uplink-text mt-3 mb-2">
-                  {s.title}
-                </h3>
-                <p className="text-sm leading-relaxed text-uplink-text-secondary">
-                  {s.desc}
-                </p>
-              </div>
+        <div className="relative mt-16 lg:mt-20">
 
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center gap-2 text-xs font-semibold text-uplink-blue">
-                <span>Phase {idx + 1}</span>
-              </div>
-            </div>
-          ))}
+          {/* Horizontal connector - desktop */}
+          <div className="absolute left-[12.5%] right-[12.5%] top-7 hidden border-t border-dashed border-blue-200 lg:block" />
+
+          {/* Vertical connector - mobile */}
+          <div className="absolute bottom-12 left-[27px] top-8 w-px bg-blue-200 md:hidden" />
+
+          <div className="grid grid-cols-1 gap-10 md:grid-cols-2 md:gap-x-12 md:gap-y-14 lg:grid-cols-4 lg:gap-8">
+
+            {STEPS.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <article
+                  key={item.step}
+                  className="relative z-10 grid grid-cols-[56px_minmax(0,1fr)] items-start gap-5 md:block lg:text-center"
+                >
+
+                  {/* Icon */}
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-blue-100 bg-white text-uplink-blue shadow-sm lg:mx-auto">
+                    <Icon
+                      className="h-6 w-6"
+                      strokeWidth={1.8}
+                    />
+                  </div>
+
+                  <div className="min-w-0 lg:mt-5">
+
+                    {/* Step number */}
+                    <span className="mb-2 inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-[11px] font-bold tracking-wider text-uplink-blue">
+                      STEP {item.step}
+                    </span>
+
+                    {/* Title */}
+                    <h3 className="text-lg font-bold tracking-tight text-uplink-text sm:text-xl">
+                      {item.title}
+                    </h3>
+
+                    {/* Description */}
+                    <p className="mx-auto mt-3 max-w-xs text-sm leading-7 text-uplink-text-secondary">
+                      {item.desc}
+                    </p>
+
+                  </div>
+                </article>
+              );
+            })}
+
+          </div>
         </div>
       </Container>
     </section>

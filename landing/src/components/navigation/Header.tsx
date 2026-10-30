@@ -1,11 +1,12 @@
-﻿"use client";
+﻿
+"use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, ArrowUpRight, Download } from "lucide-react";
+import { Menu, X, ArrowUpRight } from "lucide-react";
+
 import { siteConfig } from "@/config/site";
-import { Container } from "@/components/ui/Container";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/utils";
 
@@ -14,115 +15,219 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 30);
 
+    handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
+
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Prevent background scroll when mobile menu is open
   useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "unset";
-    }
+    if (!mobileMenuOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileMenuOpen(false);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [mobileMenuOpen]);
 
+  const closeMenu = () => setMobileMenuOpen(false);
+
   return (
-    <header
-      className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        isScrolled
-          ? "border-b border-uplink-border bg-white/95 backdrop-blur-md shadow-subtle py-3"
-          : "bg-transparent py-5"
-      )}
-    >
-      <Container className="flex items-center justify-between">
-        {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-uplink-blue rounded-md">
-          <Image
-            src="/brand/logo.svg"
-            alt="UPLINK"
-            width={130}
-            height={34}
-            priority
-            className="h-8 w-auto"
-          />
-        </Link>
+    <header className="pointer-events-none fixed inset-x-0 top-5 z-50 px-4">
+      <div className="relative mx-auto max-w-[1160px]">
 
-        {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-7" aria-label="Main Navigation">
-          {siteConfig.navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="text-sm font-medium text-uplink-text-secondary transition-colors duration-200 hover:text-uplink-text hover:text-uplink-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-uplink-blue rounded-sm py-1"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
+        {/* Floating Glass Container */}
+        <div
+          className={cn(
+            "pointer-events-auto relative isolate",
+            "flex h-[72px] items-center justify-between",
+            "overflow-hidden rounded-2xl",
+            "border border-white/30",
+            "backdrop-blur-[30px] backdrop-saturate-[180%]",
+            "ring-1 ring-slate-900/[0.04]",
+            "transition-all duration-500 ease-out",
 
-        {/* Desktop CTA Action */}
-        <div className="hidden md:flex items-center gap-3">
-          <Button
-            href="#download"
-            size="sm"
-            variant="primary"
-            className="group"
-          >
-            <Download className="w-3.5 h-3.5 transition-transform group-hover:-translate-y-0.5" />
-            <span>Get the App</span>
-          </Button>
-        </div>
-
-        {/* Mobile Hamburger Button */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-uplink-text hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-uplink-blue"
-          aria-expanded={mobileMenuOpen}
-          aria-label="Toggle Navigation Menu"
+            isScrolled
+              ? "bg-white/15 shadow-[0_12px_40px_rgba(15,23,42,0.12),inset_0_1px_0_rgba(255,255,255,0.6)]"
+              : "bg-white/[0.06] shadow-[0_8px_32px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.5)]"
+          )}
         >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
-      </Container>
 
-      {/* Mobile Menu Overlay */}
-      {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-[60px] bg-white z-40 border-t border-uplink-border px-6 py-8 flex flex-col justify-between animate-in fade-in duration-200">
-          <nav className="flex flex-col gap-5">
-            {siteConfig.navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className="text-lg font-semibold text-uplink-text hover:text-uplink-blue py-2 border-b border-slate-100"
-              >
-                {link.label}
-              </Link>
-            ))}
-          </nav>
+          {/* Glass reflection / light layer */}
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-b from-white/20 via-white/5 to-transparent" />
 
-          <div className="pt-6">
-            <Button
-              href="#download"
-              onClick={() => setMobileMenuOpen(false)}
-              size="lg"
-              variant="primary"
-              className="w-full justify-center"
+          {/* Top glass highlight */}
+          <div className="pointer-events-none absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white to-transparent opacity-90" />
+
+          {/* Navigation content */}
+          <div className="relative z-10 flex h-full w-full items-center justify-between px-5 sm:px-7">
+
+            {/* Animated UPLINK Logo */}
+            <Link
+              href="/"
+              onClick={closeMenu}
+              aria-label="UPLINK home"
+              className="flex shrink-0 items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-uplink-blue"
             >
-              <Download className="w-4 h-4 mr-2" />
-              <span>Get Android App</span>
-            </Button>
-            <p className="mt-3 text-center text-xs text-uplink-text-muted">
-              UPLINK Student Ecosystem • Milestone 1
-            </p>
+              <span
+                className={cn(
+                  "relative block shrink-0 overflow-hidden",
+                  "transition-[width,height] duration-500 ease-in-out",
+                  isScrolled
+                    ? "h-10 w-10"
+                    : "h-[52px] w-[148px] sm:h-[56px] sm:w-[160px]"
+                )}
+              >
+                {/* Horizontal logo */}
+                <Image
+                  src="/brand/uplink-horizontal-logo.png"
+                  alt=""
+                  width={2048}
+                  height={717}
+                  priority
+                  className={cn(
+                    "absolute inset-0 h-full w-full object-contain",
+                    "transition-all duration-300 ease-in-out",
+                    isScrolled
+                      ? "scale-95 opacity-0"
+                      : "scale-100 opacity-100"
+                  )}
+                />
+
+                {/* Icon-only logo */}
+                <Image
+                  src="/brand/Uplink-logo.png"
+                  alt=""
+                  width={2000}
+                  height={2000}
+                  className={cn(
+                    "absolute inset-0 h-full w-full object-contain",
+                    "transition-all duration-300 ease-in-out",
+                    isScrolled
+                      ? "scale-100 opacity-100"
+                      : "scale-75 opacity-0"
+                  )}
+                />
+              </span>
+            </Link>
+
+
+            {/* Desktop navigation */}
+            <nav
+              className="hidden items-center gap-8 lg:flex"
+              aria-label="Main navigation"
+            >
+              {siteConfig.navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="text-[13px] font-medium text-slate-600 transition-colors duration-200 hover:text-uplink-blue"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+
+            {/* Desktop CTA */}
+            <div className="hidden lg:flex">
+              <Button
+                href="#download"
+                size="sm"
+                variant="primary"
+                className="group"
+              >
+                Get the App
+                <ArrowUpRight className="ml-1.5 h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+              </Button>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="flex items-center gap-3 lg:hidden">
+              <div className="hidden sm:block md:block lg:hidden">
+                <Button href="#download" size="sm" variant="primary">
+                  Get the App
+                </Button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen((open) => !open)}
+                aria-expanded={mobileMenuOpen}
+                aria-controls="mobile-navigation"
+                aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-slate-700 transition-colors hover:bg-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-uplink-blue"
+              >
+                {mobileMenuOpen ? (
+                  <X className="h-5 w-5" />
+                ) : (
+                  <Menu className="h-5 w-5" />
+                )}
+              </button>
+            </div>
+
           </div>
         </div>
-      )}
+
+        {/* Floating Glass Mobile Menu */}
+        {mobileMenuOpen && (
+          <div
+            id="mobile-navigation"
+            className={cn(
+              "pointer-events-auto absolute left-0 right-0 top-[calc(100%+12px)]",
+              "overflow-hidden rounded-2xl border border-white/50",
+              "bg-white/[0.12] backdrop-blur-[30px] backdrop-saturate-[180%]",
+              "shadow-[0_16px_45px_rgba(15,23,42,0.14),inset_0_1px_0_rgba(255,255,255,0.8)]",
+              "lg:hidden"
+            )}
+          >
+            <div className="bg-gradient-to-b from-white/45 to-white/10 p-5">
+
+              <nav className="flex flex-col" aria-label="Mobile links">
+                {siteConfig.navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={closeMenu}
+                    className="flex items-center justify-between border-b border-white/30 py-4 text-base font-semibold text-slate-700 transition-colors hover:text-uplink-blue last:border-b-0"
+                  >
+                    {link.label}
+                    <ArrowUpRight className="h-4 w-4 text-slate-400" />
+                  </Link>
+                ))}
+              </nav>
+
+              <div className="mt-5 sm:hidden">
+                <Button
+                  href="#download"
+                  onClick={closeMenu}
+                  size="lg"
+                  variant="primary"
+                  className="w-full justify-center"
+                >
+                  Get Android App
+                  <ArrowUpRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+
+              <p className="mt-4 text-center text-xs tracking-wide text-slate-500">
+                UPLINK · Connecting Potential
+              </p>
+            </div>
+          </div>
+        )}
+
+      </div>
     </header>
   );
 }

@@ -77,7 +77,12 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
           />
 
           <View style={styles.headerInfo}>
-            <Text style={styles.name}>{profile.fullName}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={styles.name}>{profile.fullName}</Text>
+              {profile.isVerified ? (
+                <Icon name="check-circle" size={16} color="#10B981" />
+              ) : null}
+            </View>
             <Text style={styles.institution}>{profile.institution}</Text>
             <Text style={styles.department}>
               {profile.program} • {profile.department}
@@ -102,10 +107,29 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
             accessibilityRole="button"
             accessibilityLabel="My applications"
           >
-            <Icon name="briefcase" size={18} color={colors.primary} />
-            <Text style={styles.navBtnText}>My Applications</Text>
+            <Icon name="briefcase" size={16} color={colors.primary} />
+            <Text style={styles.navBtnText}>Applications</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity
+            style={styles.navBtn}
+            onPress={() => navigation.navigate('ResumeBuilder')}
+            accessibilityRole="button"
+            accessibilityLabel="Resume studio"
+          >
+            <Icon name="file-text" size={16} color={colors.primary} />
+            <Text style={styles.navBtnText}>Resume Studio</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.navBtn}
+            onPress={() => navigation.navigate('VerificationUpload')}
+            accessibilityRole="button"
+            accessibilityLabel="Institutional verification"
+          >
+            <Icon name="shield-check" size={16} color={colors.primary} />
+            <Text style={styles.navBtnText}>Get Verified</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Academic Information */}
@@ -135,8 +159,8 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
         {/* Skills */}
         <ProfileSection
           title="Skills"
-          actionLabel="Edit Skills"
-          onActionPress={() => navigation.navigate('EditProfile')}
+          actionLabel="Take Skill Test"
+          onActionPress={() => navigation.navigate('AssessmentList')}
         >
           <View style={styles.skillsWrapper}>
             {profile.skills.map((skill) => (

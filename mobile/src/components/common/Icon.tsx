@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import {
   House,
   Briefcase,
@@ -28,6 +28,15 @@ import {
   GraduationCap,
   Award,
   Code,
+  MessageSquare,
+  Send,
+  Sparkles,
+  FileText,
+  ShieldCheck,
+  CheckSquare,
+  Download,
+  RotateCw,
+  Globe,
   type LucideIcon,
 } from 'lucide-react-native';
 import { colors } from '../../theme';
@@ -62,7 +71,16 @@ export type IconName =
   | 'edit'
   | 'academic-cap'
   | 'award'
-  | 'code';
+  | 'code'
+  | 'message-square'
+  | 'send'
+  | 'sparkles'
+  | 'file-text'
+  | 'shield-check'
+  | 'check-square'
+  | 'download'
+  | 'refresh'
+  | 'globe';
 
 interface IconProps {
   name: IconName;
@@ -104,6 +122,15 @@ const ICON_MAP: Record<IconName, LucideIcon> = {
   'academic-cap': GraduationCap,
   award: Award,
   code: Code,
+  'message-square': MessageSquare,
+  send: Send,
+  sparkles: Sparkles,
+  'file-text': FileText,
+  'shield-check': ShieldCheck,
+  'check-square': CheckSquare,
+  download: Download,
+  refresh: RotateCw,
+  globe: Globe,
 };
 
 export const Icon: React.FC<IconProps> = ({

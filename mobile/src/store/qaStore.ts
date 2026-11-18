@@ -26,6 +26,7 @@ interface QAState {
     topicTags: string[];
   }) => Promise<boolean>;
   toggleHelpfulAnswer: (questionId: string, answerId: string) => Promise<void>;
+  acceptAnswer: (questionId: string, answerId: string) => Promise<boolean>;
 }
 
 export const useQAStore = create<QAState>((set, get) => ({
@@ -53,6 +54,7 @@ export const useQAStore = create<QAState>((set, get) => ({
       set({ questions: res.data, isLoading: false, error: null });
     } else {
       set({
+        questions: [],
         isLoading: false,
         error: res.error || 'Failed to load questions.',
       });
@@ -149,5 +151,21 @@ export const useQAStore = create<QAState>((set, get) => ({
         },
       }));
     }
+  },
+
+  acceptAnswer: async (questionId: string, answerId: string) => {
+    // Optimistic update
+    set((state) => ({
+      activeQuestionAnswers: {
+        ...state.activeQuestionAnswers,
+        [questionId]: (state.activeQuestionAnswers[questionId] || []).map((a) => ({
+          ...a,
+          isAccepted: a.id === answerId,
+        })),
+      },
+    }));
+
+    const res = await qaService.acceptAnswer(questionId, answerId);
+    return res.success;
   },
 }));

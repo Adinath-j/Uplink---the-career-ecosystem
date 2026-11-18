@@ -1,5 +1,11 @@
 import { create } from 'zustand';
-import { Opportunity, OpportunityCategory, WorkMode, ApplicationRecord, CampusEvent } from '../types/models';
+import {
+  Opportunity,
+  OpportunityCategory,
+  WorkMode,
+  ApplicationRecord,
+  CampusEvent,
+} from '../types/models';
 import { opportunityService } from '../services/opportunityService';
 
 interface OpportunityState {
@@ -19,7 +25,16 @@ interface OpportunityState {
   setSelectedCategory: (cat: OpportunityCategory | 'All') => void;
   setWorkModeFilter: (mode: WorkMode | 'All') => void;
   setSearchQuery: (query: string) => void;
-  applyInternal: (opportunityId: string) => Promise<{ success: boolean; error?: string }>;
+  applyInternal: (
+    opportunityId: string,
+    options?: {
+      coverLetter?: string;
+      resumeUrl?: string;
+      expectedCtc?: number;
+      remarks?: string;
+    }
+  ) => Promise<{ success: boolean; error?: string }>;
+  clearError: () => void;
 }
 
 export const useOpportunityStore = create<OpportunityState>((set, get) => ({
@@ -47,6 +62,7 @@ export const useOpportunityStore = create<OpportunityState>((set, get) => ({
       set({ opportunities: res.data, isLoading: false, error: null });
     } else {
       set({
+        opportunities: [],
         isLoading: false,
         error: res.error || 'Failed to load opportunities.',
       });
@@ -57,6 +73,8 @@ export const useOpportunityStore = create<OpportunityState>((set, get) => ({
     const res = await opportunityService.getCampusEvents();
     if (res.success && res.data) {
       set({ events: res.data });
+    } else {
+      set({ events: [] });
     }
   },
 
@@ -64,6 +82,8 @@ export const useOpportunityStore = create<OpportunityState>((set, get) => ({
     const res = await opportunityService.getMyApplications();
     if (res.success && res.data) {
       set({ myApplications: res.data });
+    } else {
+      set({ myApplications: [] });
     }
   },
 
@@ -82,17 +102,19 @@ export const useOpportunityStore = create<OpportunityState>((set, get) => ({
     get().fetchOpportunities();
   },
 
-  applyInternal: async (opportunityId: string) => {
+  applyInternal: async (opportunityId, options) => {
     set({ isApplying: true });
-    const res = await opportunityService.applyInternal(opportunityId);
+    const res = await opportunityService.applyInternal(opportunityId, options);
     set({ isApplying: false });
 
     if (res.success && res.data) {
       set((state) => ({
-        myApplications: [res.data!, ...state.myApplications],
+        myApplications: [res.data!, ...state.myApplications.filter((a) => a.opportunityId !== opportunityId)],
       }));
       return { success: true };
     }
     return { success: false, error: res.error };
   },
+
+  clearError: () => set({ error: null }),
 }));

@@ -23,8 +23,14 @@ export const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
   const [bio, setBio] = useState(profile?.bio || '');
   const [department, setDepartment] = useState(profile?.department || '');
   const [gradYear, setGradYear] = useState(String(profile?.graduationYear || '2027'));
-  const [cgpa, setCgpa] = useState(profile?.cgpa || '');
+  const initialCgpa = profile?.cgpa
+    ? profile.cgpa.replace(/\s*\/\s*10(\.0)?/g, '').trim()
+    : '';
+  const [cgpa, setCgpa] = useState(initialCgpa);
   const [skillsText, setSkillsText] = useState(profile?.skills.join(', ') || '');
+  const [achievementsText, setAchievementsText] = useState(
+    (profile?.achievements || []).join('\n')
+  );
 
   const handleSave = async () => {
     if (!fullName.trim()) {
@@ -37,6 +43,11 @@ export const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
 
+    const updatedAchievements = achievementsText
+      .split('\n')
+      .map((a) => a.trim())
+      .filter((a) => a.length > 0);
+
     const success = await updateProfile({
       fullName: fullName.trim(),
       bio: bio.trim(),
@@ -44,6 +55,7 @@ export const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
       graduationYear: parseInt(gradYear, 10) || 2027,
       cgpa: cgpa.trim(),
       skills: updatedSkills,
+      achievements: updatedAchievements,
     });
 
     if (success) {
@@ -126,6 +138,22 @@ export const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
             value={skillsText}
             onChangeText={setSkillsText}
             multiline
+            style={[styles.input, styles.textArea]}
+          />
+        </View>
+
+        <View style={styles.field}>
+          <Text style={styles.label}>Honors & Achievements (One per line)</Text>
+          <Text style={styles.helper}>
+            Format: Title: Description (e.g. Hackathon Winner: 1st Place)
+          </Text>
+          <TextInput
+            value={achievementsText}
+            onChangeText={setAchievementsText}
+            placeholder="Hackathon Winner: 1st place in smart campus category"
+            placeholderTextColor={colors.textMuted}
+            multiline
+            numberOfLines={3}
             style={[styles.input, styles.textArea]}
           />
         </View>

@@ -1,4 +1,4 @@
-﻿import { NavigatorScreenParams } from '@react-navigation/native';
+import { NavigatorScreenParams } from '@react-navigation/native';
 import { OpportunityCategory, QATopic } from './models';
 
 /**
@@ -9,6 +9,7 @@ import { OpportunityCategory, QATopic } from './models';
 export type MainTabParamList = {
   Home: undefined;
   Jobs: { initialCategory?: OpportunityCategory } | undefined;
+  Network: undefined;
   QA: { initialTopic?: QATopic } | undefined;
   Mentors: undefined;
 };
@@ -39,5 +40,32 @@ export type RootStackParamList = {
   MyProfile: undefined;
   EditProfile: undefined;
   Notifications: undefined;
+
+  // Messaging & Chat
+  Conversations: undefined;
+  Chat: {
+    conversationId: string;
+    title?: string;
+  };
+
+  // Skill Assessments
+  AssessmentList: undefined;
+  Quiz: {
+    assessmentId: string;
+    title?: string;
+  };
+
+  // AI & Resume
+  AIChat: undefined;
+  ResumeBuilder: undefined;
+
+  // Verification
+  VerificationUpload: undefined;
+
+  // Public Profile
+  PublicProfile: {
+    userId: string;
+    fullName?: string;
+  };
 };
 

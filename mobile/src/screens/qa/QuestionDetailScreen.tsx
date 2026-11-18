@@ -21,6 +21,7 @@ import { LoadingState } from '../../components/common/LoadingState';
 import { ErrorState } from '../../components/common/ErrorState';
 import { qaService } from '../../services/qaService';
 import { useQAStore } from '../../store/qaStore';
+import { useAuthStore } from '../../store/authStore';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QuestionDetail'>;
 
@@ -32,6 +33,12 @@ export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
   const [answerText, setAnswerText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const currentUser = useAuthStore((state) => state.user);
+  const isQuestionAuthor =
+    !!currentUser?.id &&
+    !!question?.authorId &&
+    (currentUser.id === question.authorId || currentUser.fullName === question.authorName);
+
   const {
     activeQuestionAnswers,
     isLoadingAnswers,
@@ -39,6 +46,7 @@ export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
     postAnswer,
     toggleSameDoubt,
     toggleHelpfulAnswer,
+    acceptAnswer,
   } = useQAStore();
 
   useEffect(() => {
@@ -126,10 +134,21 @@ export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Question Header & Body */}
         <View style={styles.questionSection}>
-          <View style={styles.authorRow}>
+          <TouchableOpacity
+            style={styles.authorRow}
+            onPress={() => {
+              if (question.authorId) {
+                navigation.navigate('PublicProfile', {
+                  userId: question.authorId,
+                  fullName: question.authorName,
+                });
+              }
+            }}
+            activeOpacity={0.7}
+          >
             <Text style={styles.authorName}>{question.authorName}</Text>
             <Text style={styles.authorContext}>• {question.authorAcademicContext}</Text>
-          </View>
+          </TouchableOpacity>
 
           <Text style={styles.questionTitle}>{question.title}</Text>
           <Text style={styles.questionDesc}>{question.description}</Text>
@@ -173,17 +192,38 @@ export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
             answers.map((ans) => (
               <View key={ans.id} style={styles.answerItem}>
                 <View style={styles.ansHeader}>
-                  <View style={styles.ansAuthorCol}>
+                  <TouchableOpacity
+                    style={styles.ansAuthorCol}
+                    onPress={() => {
+                      if (ans.authorId) {
+                        navigation.navigate('PublicProfile', {
+                          userId: ans.authorId,
+                          fullName: ans.authorName,
+                        });
+                      }
+                    }}
+                    activeOpacity={0.7}
+                  >
                     <Text style={styles.ansAuthorName}>{ans.authorName}</Text>
                     <Text style={styles.ansAuthorRole}>{ans.authorRole}</Text>
-                  </View>
+                  </TouchableOpacity>
 
-                  {ans.isAccepted && (
+                  {ans.isAccepted ? (
                     <View style={styles.acceptedBadge}>
                       <Icon name="check-circle" size={13} color={colors.success} />
                       <Text style={styles.acceptedText}>Accepted Solution</Text>
                     </View>
-                  )}
+                  ) : isQuestionAuthor ? (
+                    <TouchableOpacity
+                      onPress={() => acceptAnswer(question.id, ans.id)}
+                      style={styles.acceptButton}
+                      accessibilityRole="button"
+                      accessibilityLabel="Mark this answer as accepted solution"
+                    >
+                      <Icon name="check" size={12} color={colors.primary} />
+                      <Text style={styles.acceptButtonText}>Accept</Text>
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
 
                 <Text style={styles.ansContent}>{ans.content}</Text>
@@ -381,6 +421,23 @@ const styles = StyleSheet.create({
   acceptedText: {
     ...typography.caption,
     color: colors.success,
+    fontWeight: '600',
+    fontSize: 10,
+  },
+  acceptButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: radii.sm,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: colors.surface,
+  },
+  acceptButtonText: {
+    ...typography.caption,
+    color: colors.primary,
     fontWeight: '600',
     fontSize: 10,
   },

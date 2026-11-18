@@ -13,17 +13,33 @@ import { RootStackParamList } from '../../types/navigation';
 import { colors, radii, spacing, typography } from '../../theme';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { Icon } from '../../components/common/Icon';
+import { authService } from '../../services/authService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ForgotPassword'>;
 
 export const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = () => {
-    if (email.trim()) {
-      setIsSubmitted(true);
+  const handleSubmit = async () => {
+    if (!email.trim()) return;
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const res = await authService.forgotPassword(email.trim());
+      if (res.success) {
+        setIsSubmitted(true);
+      } else {
+        setError(res.error || 'Unable to process recovery request. Please try again.');
+      }
+    } catch (e: any) {
+      setError(e.message || 'An unexpected error occurred.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -49,6 +65,13 @@ export const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
         <Text style={styles.subtitle}>
           Enter your registered campus email address. We will verify your identity with your institution.
         </Text>
+
+        {error && (
+          <View style={styles.errorBanner}>
+            <Icon name="help-circle" size={16} color={colors.danger} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
 
         {isSubmitted ? (
           <View style={styles.successCard}>
@@ -79,9 +102,9 @@ export const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
             </View>
 
             <PrimaryButton
-              label="Send Recovery Link"
+              label={isLoading ? 'Sending...' : 'Send Recovery Link'}
               onPress={handleSubmit}
-              disabled={!email.trim()}
+              disabled={!email.trim() || isLoading}
               size="lg"
             />
           </View>
@@ -120,6 +143,22 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginBottom: spacing[5],
     lineHeight: 18,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    backgroundColor: colors.dangerSoft,
+    padding: spacing[3],
+    borderRadius: radii.md,
+    marginBottom: spacing[4],
+    borderWidth: 1,
+    borderColor: colors.danger,
+  },
+  errorText: {
+    ...typography.bodySmall,
+    color: colors.danger,
+    flex: 1,
   },
   formCard: {
     backgroundColor: colors.surface,

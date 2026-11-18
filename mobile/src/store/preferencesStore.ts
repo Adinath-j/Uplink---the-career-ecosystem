@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { storage } from '../services/api/tokenStorage';
+import { opportunityService } from '../services/opportunityService';
 
 /**
- * Storage Keys for non-sensitive local preferences.
- * Auth credentials MUST NOT be stored in plain AsyncStorage.
+ * Storage Keys for non-sensitive local preferences powered by MMKV.
  */
 const STORAGE_KEYS = {
   ONBOARDING_COMPLETED: '@uplink_pref_onboarding_completed',
@@ -28,10 +28,8 @@ export const usePreferencesStore = create<PreferencesState>((set, get) => ({
 
   hydrate: async () => {
     try {
-      const [onboardingVal, bookmarksVal] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEYS.ONBOARDING_COMPLETED),
-        AsyncStorage.getItem(STORAGE_KEYS.BOOKMARKED_OPPORTUNITIES),
-      ]);
+      const onboardingVal = storage.getString(STORAGE_KEYS.ONBOARDING_COMPLETED);
+      const bookmarksVal = storage.getString(STORAGE_KEYS.BOOKMARKED_OPPORTUNITIES);
 
       set({
         hasCompletedOnboarding: onboardingVal === 'true',
@@ -45,7 +43,7 @@ export const usePreferencesStore = create<PreferencesState>((set, get) => ({
 
   setOnboardingCompleted: async (completed: boolean) => {
     try {
-      await AsyncStorage.setItem(
+      storage.set(
         STORAGE_KEYS.ONBOARDING_COMPLETED,
         completed ? 'true' : 'false'
       );
@@ -63,12 +61,19 @@ export const usePreferencesStore = create<PreferencesState>((set, get) => ({
 
     set({ bookmarkedOpportunityIds: updated });
     try {
-      await AsyncStorage.setItem(
+      storage.set(
         STORAGE_KEYS.BOOKMARKED_OPPORTUNITIES,
         JSON.stringify(updated)
       );
     } catch (e) {
       console.warn('Failed to save bookmarks preference', e);
+    }
+
+    // Sync to backend asynchronously
+    if (exists) {
+      opportunityService.unsaveOpportunity(id).catch(() => {});
+    } else {
+      opportunityService.saveOpportunity(id).catch(() => {});
     }
   },
 

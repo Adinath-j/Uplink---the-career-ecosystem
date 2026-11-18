@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -56,6 +57,11 @@ export const SignInScreen: React.FC<Props> = ({ navigation }) => {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.brandContainer}>
+          <Image
+            source={require('../../../assets/brand/uplink-emblem.png')}
+            style={styles.brandLogo}
+            resizeMode="contain"
+          />
           <Text style={styles.brandTitle}>UPLINK</Text>
           <Text style={styles.headerSubtitle}>Unified Campus Career Ecosystem</Text>
         </View>
@@ -173,6 +179,11 @@ const styles = StyleSheet.create({
   brandContainer: {
     alignItems: 'center',
     marginBottom: spacing[6],
+  },
+  brandLogo: {
+    width: 68,
+    height: 68,
+    marginBottom: spacing[2],
   },
   brandTitle: {
     ...typography.screenTitle,

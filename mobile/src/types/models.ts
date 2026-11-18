@@ -49,6 +49,7 @@ export interface StudentProfile {
   experience: Experience[];
   certifications: Certification[];
   achievements: string[];
+  isVerified?: boolean;
 }
 
 export type OpportunityCategory =

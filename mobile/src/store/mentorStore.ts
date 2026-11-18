@@ -47,6 +47,7 @@ export const useMentorStore = create<MentorState>((set, get) => ({
       set({ mentors: res.data, isLoading: false, error: null });
     } else {
       set({
+        mentors: [],
         isLoading: false,
         error: res.error || 'Failed to load mentors.',
       });
@@ -57,6 +58,8 @@ export const useMentorStore = create<MentorState>((set, get) => ({
     const res = await mentorService.getMyBookingRequests();
     if (res.success && res.data) {
       set({ bookingRequests: res.data });
+    } else {
+      set({ bookingRequests: [] });
     }
   },
 

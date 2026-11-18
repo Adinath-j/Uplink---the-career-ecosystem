@@ -138,7 +138,7 @@ export const JobsScreen: React.FC<Props> = ({ navigation, route }) => {
       {/* Main List */}
       {isLoading && !isRefreshing ? (
         <LoadingState message="Fetching opportunities..." />
-      ) : error ? (
+      ) : error && opportunities.length === 0 ? (
         <ErrorState message={error} onRetry={fetchOpportunities} />
       ) : opportunities.length === 0 ? (
         <EmptyState

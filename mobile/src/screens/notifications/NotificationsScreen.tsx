@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
+  RefreshControl,
   StyleSheet,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -11,7 +12,9 @@ import { RootStackParamList } from '../../types/navigation';
 import { InAppNotification } from '../../types/models';
 import { colors, spacing, typography } from '../../theme';
 import { AppHeader } from '../../components/common/AppHeader';
+import { SecondaryButton } from '../../components/common/SecondaryButton';
 import { EmptyState } from '../../components/common/EmptyState';
+import { LoadingState } from '../../components/common/LoadingState';
 import { Icon, IconName } from '../../components/common/Icon';
 import { notificationService } from '../../services/notificationService';
 
@@ -19,23 +22,37 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Notifications'>;
 
 export const NotificationsScreen: React.FC<Props> = ({ navigation }) => {
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const loadNotifications = useCallback(async () => {
+    const res = await notificationService.getNotifications();
+    if (res.success && res.data) {
+      setNotifications(res.data);
+    }
+    setIsLoading(false);
+  }, []);
 
   useEffect(() => {
-    const loadNotifs = async () => {
-      const res = await notificationService.getNotifications();
-      if (res.success && res.data) {
-        setNotifications(res.data);
-      }
-    };
+    loadNotifications();
+  }, [loadNotifications]);
 
-    loadNotifs();
-  }, []);
+  const onRefresh = async () => {
+    setIsRefreshing(true);
+    await loadNotifications();
+    setIsRefreshing(false);
+  };
 
   const handleMarkAsRead = async (id: string) => {
     await notificationService.markAsRead(id);
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
+  };
+
+  const handleMarkAllAsRead = async () => {
+    await notificationService.markAllAsRead();
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
   };
 
   const getIconForType = (type: InAppNotification['type']): IconName => {
@@ -52,30 +69,52 @@ export const NotificationsScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const hasUnread = notifications.some((n) => !n.isRead);
+
   return (
     <View style={styles.container}>
       <AppHeader
         title="Notifications"
         onBackPress={() => navigation.goBack()}
+        rightAction={
+          hasUnread ? (
+            <SecondaryButton
+              label="Mark all read"
+              size="sm"
+              onPress={handleMarkAllAsRead}
+            />
+          ) : undefined
+        }
       />
 
-      {notifications.length === 0 ? (
+      {isLoading && !isRefreshing ? (
+        <LoadingState message="Loading notifications..." />
+      ) : notifications.length === 0 ? (
         <EmptyState
           title="No New Notifications"
-          description="Updates on your applications, mentorship sessions, and Q&A replies will appear here."
+          description="Updates on your applications, campus notices, and opportunities will appear here."
           icon="bell"
         />
       ) : (
         <FlatList
           data={notifications}
           keyExtractor={(item) => item.id}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={onRefresh}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
+            />
+          }
+          contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
             <TouchableOpacity
               onPress={() => handleMarkAsRead(item.id)}
               activeOpacity={0.7}
               style={[styles.item, !item.isRead && styles.itemUnread]}
             >
-              <View style={styles.iconCircle}>
+              <View style={[styles.iconCircle, !item.isRead && styles.iconCircleUnread]}>
                 <Icon
                   name={getIconForType(item.type)}
                   size={18}
@@ -105,53 +144,61 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  listContent: {
+    paddingVertical: spacing[2],
+  },
   item: {
     flexDirection: 'row',
-    padding: spacing[4],
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    backgroundColor: colors.surface,
+    alignItems: 'flex-start',
   },
   itemUnread: {
-    backgroundColor: colors.surfaceMuted,
+    backgroundColor: colors.primarySoft,
   },
   iconCircle: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing[3],
+  },
+  iconCircleUnread: {
+    backgroundColor: colors.primarySoft,
   },
   itemContent: {
     flex: 1,
   },
   itemTopRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 2,
   },
   itemTitle: {
-    ...typography.cardTitle,
-    fontSize: 14,
-    color: colors.textSecondary,
+    ...typography.bodySmall,
+    fontWeight: '500',
+    color: colors.text,
+    flex: 1,
   },
   itemTitleUnread: {
-    color: colors.text,
     fontWeight: '700',
+    color: colors.text,
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
     backgroundColor: colors.primary,
+    marginLeft: spacing[2],
   },
   itemMessage: {
-    ...typography.bodySmall,
+    ...typography.caption,
     color: colors.textSecondary,
     lineHeight: 18,
   },

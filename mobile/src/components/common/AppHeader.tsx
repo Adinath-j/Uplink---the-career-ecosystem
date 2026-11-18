@@ -17,6 +17,7 @@ interface AppHeaderProps {
   title?: string;
   onBookmarkPress?: () => void;
   onNotificationPress?: () => void;
+  onMessagePress?: () => void;
   onProfilePress?: () => void;
   onBackPress?: () => void;
   rightAction?: React.ReactNode;
@@ -27,6 +28,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   title,
   onBookmarkPress,
   onNotificationPress,
+  onMessagePress,
   onProfilePress,
   onBackPress,
   rightAction,
@@ -102,6 +104,18 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                 </TouchableOpacity>
               )}
 
+              {onMessagePress && (
+                <TouchableOpacity
+                  onPress={onMessagePress}
+                  accessibilityRole="button"
+                  accessibilityLabel="Messages"
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={styles.actionBtn}
+                >
+                  <Icon name="message-square" size={20} color={colors.text} />
+                </TouchableOpacity>
+              )}
+
               {onProfilePress && (
                 <TouchableOpacity
                   onPress={onProfilePress}
@@ -111,7 +125,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   style={styles.avatarBtn}
                 >
                   <Avatar
-                    name={user?.fullName || 'Aditya Verma'}
+                    name={user?.fullName || 'User'}
                     imageUrl={user?.avatarUrl}
                     size={32}
                   />

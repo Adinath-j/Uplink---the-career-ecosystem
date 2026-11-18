@@ -1,4 +1,4 @@
-﻿import React, { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
@@ -9,28 +9,40 @@ import { useAuthStore } from '../../store/authStore';
 type Props = NativeStackScreenProps<RootStackParamList, 'Bootstrap'>;
 
 export const BootstrapScreen: React.FC<Props> = ({ navigation }) => {
-  const { hydrate } = usePreferencesStore();
-  const { isAuthenticated } = useAuthStore();
+  const { hydrate: hydratePreferences } = usePreferencesStore();
+  const { hydrate: hydrateAuth } = useAuthStore();
 
   useEffect(() => {
+    let isMounted = true;
+
     const bootstrap = async () => {
-      // Hydrate local preferences
-      await hydrate();
+      // Hydrate local preferences and auth session in parallel if not already loaded
+      await Promise.all([
+        !usePreferencesStore.getState().isHydrated ? hydratePreferences() : Promise.resolve(true),
+        !useAuthStore.getState().isHydrated ? hydrateAuth() : Promise.resolve(true),
+      ]);
 
-      const state = usePreferencesStore.getState();
+      if (!isMounted) return;
 
-      if (!state.hasCompletedOnboarding) {
+      const prefState = usePreferencesStore.getState();
+      const authState = useAuthStore.getState();
+
+      if (!prefState.hasCompletedOnboarding) {
         navigation.replace('Onboarding');
-      } else if (isAuthenticated) {
+      } else if (authState.isAuthenticated) {
         navigation.replace('MainTabs', { screen: 'Home' });
       } else {
-        // If onboarding is complete but not authenticated, go to SignIn
+        // If onboarding is complete but not authenticated, navigate to SignIn
         navigation.replace('SignIn');
       }
     };
 
     bootstrap();
-  }, [hydrate, isAuthenticated, navigation]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [hydratePreferences, hydrateAuth, navigation]);
 
   return (
     <View style={styles.container}>

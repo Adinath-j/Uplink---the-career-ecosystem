@@ -9,6 +9,8 @@ interface ProfileState {
 
   fetchProfile: () => Promise<void>;
   updateProfile: (updates: Partial<StudentProfile>) => Promise<boolean>;
+  setProfile: (profile: StudentProfile | null) => void;
+  clearError: () => void;
 }
 
 export const useProfileStore = create<ProfileState>((set) => ({
@@ -20,9 +22,10 @@ export const useProfileStore = create<ProfileState>((set) => ({
     set({ isLoading: true, error: null });
     const res = await profileService.getMyProfile();
     if (res.success && res.data) {
-      set({ profile: res.data, isLoading: false });
+      set({ profile: res.data, isLoading: false, error: null });
     } else {
       set({
+        profile: null,
         isLoading: false,
         error: res.error || 'Failed to load profile.',
       });
@@ -30,13 +33,20 @@ export const useProfileStore = create<ProfileState>((set) => ({
   },
 
   updateProfile: async (updates) => {
-    set({ isLoading: true });
+    set({ isLoading: true, error: null });
     const res = await profileService.updateProfile(updates);
     if (res.success && res.data) {
-      set({ profile: res.data, isLoading: false });
+      set({ profile: res.data, isLoading: false, error: null });
       return true;
     }
-    set({ isLoading: false });
+    set({
+      isLoading: false,
+      error: res.error || 'Unable to update profile.',
+    });
     return false;
   },
+
+  setProfile: (profile) => set({ profile }),
+
+  clearError: () => set({ error: null }),
 }));

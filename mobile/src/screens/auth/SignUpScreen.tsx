@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Image,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -70,6 +71,12 @@ export const SignUpScreen: React.FC<Props> = ({ navigation }) => {
           <Icon name="arrow-left" size={20} color={colors.text} />
           <Text style={styles.backText}>Sign In</Text>
         </TouchableOpacity>
+
+        <Image
+          source={require('../../../assets/brand/uplink-emblem.png')}
+          style={styles.brandLogo}
+          resizeMode="contain"
+        />
 
         <Text style={styles.title}>Create Student Account</Text>
         <Text style={styles.subtitle}>
@@ -186,6 +193,11 @@ const styles = StyleSheet.create({
     ...typography.bodySmall,
     color: colors.text,
     fontWeight: '500',
+  },
+  brandLogo: {
+    width: 48,
+    height: 48,
+    marginBottom: spacing[2],
   },
   title: {
     ...typography.screenTitle,

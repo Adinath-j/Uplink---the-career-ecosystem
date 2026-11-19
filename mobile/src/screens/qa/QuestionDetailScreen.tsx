@@ -11,6 +11,7 @@ import {
   Alert,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../types/navigation';
 import { Question } from '../../types/models';
 import { colors, radii, spacing, typography } from '../../theme';
@@ -27,6 +28,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'QuestionDetail'>;
 
 export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { questionId } = route.params;
+  const insets = useSafeAreaInsets();
   const [question, setQuestion] = useState<Question | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,7 +125,7 @@ export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
       keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
     >
       <AppHeader
@@ -260,7 +262,12 @@ export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
       </ScrollView>
 
       {/* Answer Composer Footer */}
-      <View style={styles.composerBar}>
+      <View
+        style={[
+          styles.composerBar,
+          { paddingBottom: Math.max(insets.bottom, spacing[3]) },
+        ]}
+      >
         <TextInput
           value={answerText}
           onChangeText={setAnswerText}

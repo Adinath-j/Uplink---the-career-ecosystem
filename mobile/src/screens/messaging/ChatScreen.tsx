@@ -13,6 +13,7 @@ import {
   AppStateStatus,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../types/navigation';
 import { colors, radii, spacing, typography } from '../../theme';
 import { AppHeader } from '../../components/common/AppHeader';
@@ -27,6 +28,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 
 export const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   const { conversationId, title } = route.params;
+  const insets = useSafeAreaInsets();
   const [inputText, setInputText] = useState('');
 
   const currentUser = useAuthStore((state) => state.user);
@@ -197,7 +199,7 @@ export const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       <AppHeader
@@ -262,7 +264,12 @@ export const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
       ) : null}
 
       {/* Input bar */}
-      <View style={styles.inputContainer}>
+      <View
+        style={[
+          styles.inputContainer,
+          { paddingBottom: Math.max(insets.bottom, spacing[2]) },
+        ]}
+      >
         <TextInput
           style={styles.textInput}
           placeholder="Type a message..."

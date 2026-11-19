@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../types/navigation';
 import { AppHeader } from '../../components/common/AppHeader';
 import { Icon } from '../../components/common/Icon';
@@ -30,6 +31,7 @@ const PROMPT_SUGGESTIONS = [
 
 export const AIChatScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
+  const insets = useSafeAreaInsets();
   const { messages, isThinking, sendPrompt, clearChat } = useAiStore();
   const [inputText, setInputText] = useState('');
   const [selectedTopic, setSelectedTopic] = useState('CAREER_ADVICE');
@@ -88,7 +90,7 @@ export const AIChatScreen: React.FC = () => {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
       keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
     >
       <AppHeader
@@ -168,7 +170,12 @@ export const AIChatScreen: React.FC = () => {
       />
 
       {/* Input row */}
-      <View style={styles.inputArea}>
+      <View
+        style={[
+          styles.inputArea,
+          { paddingBottom: Math.max(insets.bottom, spacing[3]) },
+        ]}
+      >
         <TextInput
           style={styles.textInput}
           placeholder="Ask career advice, interview prep, resume..."

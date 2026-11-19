@@ -1,9 +1,14 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { AppState } from 'react-native';
 import { NavigationContainer, DefaultTheme, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BootSplash from 'react-native-bootsplash';
 import { RootStackParamList } from '../types/navigation';
 import { colors } from '../theme';
+import { ENV } from '../config/env';
+import { storage } from '../services/api/tokenStorage';
+import { prefetchPostAuthData, purgeAllScopedCaches } from '../lib/queryClient';
+import { websocketService } from '../services/api/websocketService';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { useAuthStore } from '../store/authStore';
 import { useMessagingStore } from '../store/messagingStore';
@@ -53,16 +58,35 @@ const AppNavTheme = {
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 export const RootNavigator: React.FC = () => {
+  useEffect(() => {
+    // Reconnect STOMP whenever application transitions into active foreground
+    const sub = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active' && useAuthStore.getState().isAuthenticated) {
+        websocketService.connect();
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
   const handleReady = async () => {
     try {
+      // Purge stale offline caches if backend target changed
+      const LAST_ENV_KEY = '@uplink_last_api_base';
+      const lastBase = storage.getString(LAST_ENV_KEY);
+      if (lastBase && lastBase !== ENV.API_BASE_URL) {
+        purgeAllScopedCaches();
+      }
+      storage.set(LAST_ENV_KEY, ENV.API_BASE_URL);
+
       await Promise.all([
         usePreferencesStore.getState().hydrate(),
         useAuthStore.getState().hydrate(),
       ]);
 
-      // If already signed in, eagerly connect WebSocket for real-time messages & alerts
+      // If signed in, eagerly connect WebSocket & prefetch profile and inbox in parallel
       if (useAuthStore.getState().isAuthenticated) {
         useMessagingStore.getState().initSocket();
+        prefetchPostAuthData();
       }
     } catch (error) {
       console.warn('[RootNavigator] Initial hydration error:', error);

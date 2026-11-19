@@ -10,6 +10,7 @@ import {
 import { tokenStorage } from '../services/api/tokenStorage';
 import { apiClient } from '../services/api/apiClient';
 import { websocketService } from '../services/api/websocketService';
+import { prefetchPostAuthData, purgeAllScopedCaches } from '../lib/queryClient';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -144,6 +145,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
             isLoading: false,
             error: null,
           });
+          prefetchPostAuthData();
           return true;
         } else {
           set({
@@ -175,6 +177,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
             isLoading: false,
             error: null,
           });
+          prefetchPostAuthData();
           return true;
         } else {
           set({
@@ -198,6 +201,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
       } catch {
         // Ignore
       }
+      purgeAllScopedCaches();
       await authService.signOut();
       set({
         isAuthenticated: false,
@@ -225,6 +229,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
             isLoading: false,
             error: null,
           });
+          prefetchPostAuthData();
         } else {
           set({
             isLoading: false,

@@ -25,6 +25,7 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { Icon } from '../../components/common/Icon';
 import { useOpportunityStore } from '../../store/opportunityStore';
 import { contentService, PostResponseDto } from '../../services/contentService';
+import { getScopedCache, saveScopedCache } from '../../lib/queryClient';
 import { CampusEvent } from '../../types/models';
 
 type Props = CompositeScreenProps<
@@ -54,18 +55,21 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const fetchOpportunities = useOpportunityStore((state) => state.fetchOpportunities);
   const fetchEvents = useOpportunityStore((state) => state.fetchEvents);
 
-  const [communityPosts, setCommunityPosts] = useState<PostResponseDto[]>([]);
+  const [communityPosts, setCommunityPosts] = useState<PostResponseDto[]>(
+    () => getScopedCache<PostResponseDto[]>('feed_home') || []
+  );
 
   const fetchFeed = async () => {
     try {
       const res = await contentService.getFeed('All', 0, 5);
       if (res.success && res.data && res.data.length > 0) {
         setCommunityPosts(res.data);
-      } else {
+        saveScopedCache('feed_home', res.data);
+      } else if (communityPosts.length === 0) {
         setCommunityPosts([]);
       }
     } catch {
-      setCommunityPosts([]);
+      // Keep existing cached posts if fetch fails
     }
   };
 
@@ -180,7 +184,7 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
               </View>
             </View>
 
-            {isLoading && !isRefreshing ? (
+            {isLoading && !isRefreshing && opportunities.length === 0 ? (
               <LoadingState message="Loading latest campus activity..." />
             ) : error && filteredOpportunities.length === 0 ? (
               <ErrorState message={error} onRetry={fetchOpportunities} />

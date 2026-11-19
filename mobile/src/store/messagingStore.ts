@@ -9,6 +9,7 @@ import {
 import { websocketService, ConnectionState } from '../services/api/websocketService';
 import { useAuthStore } from './authStore';
 import { useAlertStore } from './alertStore';
+import { getScopedCache, saveScopedCache } from '../lib/queryClient';
 
 interface MessagingState {
   conversations: BackendConversation[];
@@ -49,7 +50,7 @@ let socketInitialized = false;
 const typingTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 
 export const useMessagingStore = create<MessagingState>((set, get) => ({
-  conversations: [],
+  conversations: getScopedCache<BackendConversation[]>('conversations') || [],
   activeMessages: [],
   isLoadingConversations: false,
   isLoadingMessages: false,
@@ -295,6 +296,8 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
         updatedConversations.unshift(target);
       }
 
+      saveScopedCache('conversations', updatedConversations);
+
       return {
         activeMessages: updatedMessages,
         conversations: updatedConversations,
@@ -309,7 +312,10 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   },
 
   fetchConversations: async () => {
-    set({ isLoadingConversations: true, error: null });
+    const hasExisting = get().conversations.length > 0;
+    if (!hasExisting) {
+      set({ isLoadingConversations: true, error: null });
+    }
     const res = await messagingService.getMyConversations();
     if (res.success && res.data) {
       set({
@@ -317,11 +323,17 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
         isLoadingConversations: false,
         error: null,
       });
+      saveScopedCache('conversations', res.data);
     } else {
-      set({
-        isLoadingConversations: false,
-        error: res.error || 'Failed to load conversations.',
-      });
+      if (!hasExisting) {
+        set({
+          conversations: [],
+          isLoadingConversations: false,
+          error: res.error || 'Failed to load conversations.',
+        });
+      } else {
+        set({ isLoadingConversations: false });
+      }
     }
   },
 

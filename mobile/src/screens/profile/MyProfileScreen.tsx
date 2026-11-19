@@ -23,6 +23,7 @@ import { SecondaryButton } from '../../components/common/SecondaryButton';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { Icon } from '../../components/common/Icon';
 import { LoadingState } from '../../components/common/LoadingState';
+import { ErrorState } from '../../components/common/ErrorState';
 import { CalendarDatePickerModal } from '../../components/common/CalendarDatePickerModal';
 import { DatePickerInput } from '../../components/common/DatePickerInput';
 import { useProfileStore } from '../../store/profileStore';
@@ -38,6 +39,7 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
     profile,
     isLoading,
     isActionLoading,
+    error,
     fetchProfile,
     addSkill,
     deleteSkill,
@@ -390,11 +392,20 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
     );
   };
 
-  if (isLoading || !profile) {
+  if (isLoading && !profile) {
     return (
       <View style={styles.container}>
         <AppHeader title="Profile" onBackPress={() => navigation.goBack()} />
         <LoadingState message="Loading your profile..." />
+      </View>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <View style={styles.container}>
+        <AppHeader title="Profile" onBackPress={() => navigation.goBack()} />
+        <ErrorState message={error || 'Unable to load profile.'} onRetry={fetchProfile} />
       </View>
     );
   }

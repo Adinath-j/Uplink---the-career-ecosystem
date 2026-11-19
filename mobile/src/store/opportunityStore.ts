@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { getScopedCache, saveScopedCache } from '../lib/queryClient';
 import {
   Opportunity,
   OpportunityCategory,
@@ -38,7 +39,7 @@ interface OpportunityState {
 }
 
 export const useOpportunityStore = create<OpportunityState>((set, get) => ({
-  opportunities: [],
+  opportunities: getScopedCache<Opportunity[]>('opportunities') || [],
   events: [],
   myApplications: [],
   selectedCategory: 'All',
@@ -49,7 +50,10 @@ export const useOpportunityStore = create<OpportunityState>((set, get) => ({
   error: null,
 
   fetchOpportunities: async () => {
-    set({ isLoading: true, error: null });
+    const hasExisting = get().opportunities.length > 0;
+    if (!hasExisting) {
+      set({ isLoading: true, error: null });
+    }
     const { selectedCategory, workModeFilter, searchQuery } = get();
 
     const res = await opportunityService.getOpportunities({
@@ -60,12 +64,19 @@ export const useOpportunityStore = create<OpportunityState>((set, get) => ({
 
     if (res.success && res.data) {
       set({ opportunities: res.data, isLoading: false, error: null });
+      if (selectedCategory === 'All' && workModeFilter === 'All' && !searchQuery) {
+        saveScopedCache('opportunities', res.data);
+      }
     } else {
-      set({
-        opportunities: [],
-        isLoading: false,
-        error: res.error || 'Failed to load opportunities.',
-      });
+      if (!hasExisting) {
+        set({
+          opportunities: [],
+          isLoading: false,
+          error: res.error || 'Failed to load opportunities.',
+        });
+      } else {
+        set({ isLoading: false });
+      }
     }
   },
 

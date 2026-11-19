@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { StudentProfile } from '../types/models';
+import { getScopedCache, saveScopedCache } from '../lib/queryClient';
 import {
   profileService,
   BackendUserSkill,
@@ -34,33 +35,43 @@ interface ProfileState {
 }
 
 export const useProfileStore = create<ProfileState>((set, get) => ({
-  profile: null,
-  userSkills: [],
+  profile: getScopedCache<StudentProfile>('profile'),
+  userSkills: getScopedCache<BackendUserSkill[]>('skills') || [],
   isLoading: false,
   isActionLoading: false,
   error: null,
 
   fetchProfile: async () => {
-    set({ isLoading: true, error: null });
+    const hasExisting = !!get().profile;
+    if (!hasExisting) {
+      set({ isLoading: true, error: null });
+    }
     const [profileRes, skillsRes] = await Promise.all([
       profileService.getMyProfile(),
       profileService.getSkills(),
     ]);
 
     if (profileRes.success && profileRes.data) {
+      const skillsData = skillsRes.success && Array.isArray(skillsRes.data) ? skillsRes.data : [];
       set({
         profile: profileRes.data,
-        userSkills: skillsRes.success && Array.isArray(skillsRes.data) ? skillsRes.data : [],
+        userSkills: skillsData,
         isLoading: false,
         error: null,
       });
+      saveScopedCache('profile', profileRes.data);
+      saveScopedCache('skills', skillsData);
     } else {
-      set({
-        profile: null,
-        userSkills: [],
-        isLoading: false,
-        error: profileRes.error || 'Failed to load profile.',
-      });
+      if (!hasExisting) {
+        set({
+          profile: null,
+          userSkills: [],
+          isLoading: false,
+          error: profileRes.error || 'Failed to load profile.',
+        });
+      } else {
+        set({ isLoading: false });
+      }
     }
   },
 
@@ -69,6 +80,7 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
     const res = await profileService.updateProfile(updates);
     if (res.success && res.data) {
       set({ profile: res.data, isActionLoading: false, error: null });
+      saveScopedCache('profile', res.data);
       return true;
     }
     set({

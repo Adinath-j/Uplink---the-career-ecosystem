@@ -105,6 +105,10 @@ export const ENV = {
 export function setBackendEnvironment(target: BackendEnvironment) {
   ENV.API_BASE_URL = resolveBackendUrl(target);
   ENV.API_TIMEOUT_MS = target === 'deployed' ? 60000 : 10000;
+  try {
+    const { purgeAllScopedCaches } = require('../lib/queryClient');
+    purgeAllScopedCaches();
+  } catch {}
 }
 
 /**
@@ -113,6 +117,10 @@ export function setBackendEnvironment(target: BackendEnvironment) {
  */
 export function configureApiBaseUrl(url: string) {
   ENV.API_BASE_URL = url.endsWith('/') ? url.slice(0, -1) : url;
+  try {
+    const { purgeAllScopedCaches } = require('../lib/queryClient');
+    purgeAllScopedCaches();
+  } catch {}
 }
 
 export type EnvConfig = typeof ENV;

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -31,7 +31,7 @@ export const PublicProfileScreen: React.FC = () => {
   const route = useRoute<PublicProfileRouteProp>();
   const { userId, fullName: initialName } = route.params;
 
-  const { createConversation } = useMessagingStore();
+  const { getOrCreateConversation } = useMessagingStore();
 
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -39,7 +39,7 @@ export const PublicProfileScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isStartingChat, setIsStartingChat] = useState(false);
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       setError(null);
       const res = await profileService.getUserPortfolio(userId);
@@ -56,11 +56,11 @@ export const PublicProfileScreen: React.FC = () => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     fetchProfile();
-  }, [userId]);
+  }, [fetchProfile]);
 
   const onRefresh = async () => {
     setIsRefreshing(true);
@@ -73,7 +73,7 @@ export const PublicProfileScreen: React.FC = () => {
     setIsStartingChat(true);
 
     try {
-      const convo = await createConversation([userId]);
+      const convo = await getOrCreateConversation(userId);
       const targetName = profile?.fullName || initialName || 'Peer';
 
       if (convo && convo.id) {

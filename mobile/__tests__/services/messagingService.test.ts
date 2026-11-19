@@ -115,5 +115,34 @@ describe('messagingService', () => {
     expect(postSpy).toHaveBeenCalledWith('/messages/conversation/conv-101/read');
     expect(res.success).toBe(true);
   });
+
+  test('getOrCreateConversation calls POST /messages/conversations with recipientId', async () => {
+    const postSpy = jest.spyOn(apiClient, 'post').mockResolvedValueOnce({
+      success: true,
+      data: mockConversation,
+      statusCode: 200,
+    });
+
+    const res = await messagingService.getOrCreateConversation('usr-2');
+    expect(postSpy).toHaveBeenCalledWith('/messages/conversations', {
+      recipientId: 'usr-2',
+      participantIds: ['usr-2'],
+      type: 'DIRECT',
+    });
+    expect(res.success).toBe(true);
+  });
+
+  test('searchPeers calls GET /messages/users/search with query', async () => {
+    const getSpy = jest.spyOn(apiClient, 'get').mockResolvedValueOnce({
+      success: true,
+      data: [{ id: 'usr-2', fullName: 'Recruiter Smith', email: 'smith@campus.edu' }],
+      statusCode: 200,
+    });
+
+    const res = await messagingService.searchPeers('Smith');
+    expect(getSpy).toHaveBeenCalledWith('/messages/users/search?query=Smith');
+    expect(res.success).toBe(true);
+    expect(res.data?.length).toBe(1);
+  });
 });
 

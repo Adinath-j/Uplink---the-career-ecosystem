@@ -17,7 +17,7 @@ import { useProfileStore } from '../../store/profileStore';
 type Props = NativeStackScreenProps<RootStackParamList, 'EditProfile'>;
 
 export const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
-  const { profile, updateProfile, isLoading } = useProfileStore();
+  const { profile, updateProfile, isLoading, isActionLoading } = useProfileStore();
 
   const [fullName, setFullName] = useState(profile?.fullName || '');
   const [bio, setBio] = useState(profile?.bio || '');
@@ -161,7 +161,7 @@ export const EditProfileScreen: React.FC<Props> = ({ navigation }) => {
         <PrimaryButton
           label="Save Changes"
           onPress={handleSave}
-          isLoading={isLoading}
+          isLoading={isLoading || isActionLoading}
           size="lg"
           style={styles.saveBtn}
         />

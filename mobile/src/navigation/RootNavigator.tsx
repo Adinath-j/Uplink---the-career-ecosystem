@@ -1,11 +1,13 @@
 import React from 'react';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BootSplash from 'react-native-bootsplash';
 import { RootStackParamList } from '../types/navigation';
 import { colors } from '../theme';
 import { usePreferencesStore } from '../store/preferencesStore';
 import { useAuthStore } from '../store/authStore';
+import { useMessagingStore } from '../store/messagingStore';
+import { InAppNotificationBanner } from '../components/common/InAppNotificationBanner';
 
 // Screens
 import { BootstrapScreen } from '../screens/bootstrap/BootstrapScreen';
@@ -23,6 +25,7 @@ import { MentorDetailScreen } from '../screens/mentors/MentorDetailScreen';
 import { BookingRequestScreen } from '../screens/mentors/BookingRequestScreen';
 import { MyProfileScreen } from '../screens/profile/MyProfileScreen';
 import { EditProfileScreen } from '../screens/profile/EditProfileScreen';
+import { SettingsScreen } from '../screens/settings/SettingsScreen';
 import { NotificationsScreen } from '../screens/notifications/NotificationsScreen';
 import { ConversationsScreen } from '../screens/messaging/ConversationsScreen';
 import { ChatScreen } from '../screens/messaging/ChatScreen';
@@ -47,6 +50,8 @@ const AppNavTheme = {
   },
 };
 
+export const navigationRef = createNavigationContainerRef<RootStackParamList>();
+
 export const RootNavigator: React.FC = () => {
   const handleReady = async () => {
     try {
@@ -54,6 +59,11 @@ export const RootNavigator: React.FC = () => {
         usePreferencesStore.getState().hydrate(),
         useAuthStore.getState().hydrate(),
       ]);
+
+      // If already signed in, eagerly connect WebSocket for real-time messages & alerts
+      if (useAuthStore.getState().isAuthenticated) {
+        useMessagingStore.getState().initSocket();
+      }
     } catch (error) {
       console.warn('[RootNavigator] Initial hydration error:', error);
     } finally {
@@ -62,7 +72,7 @@ export const RootNavigator: React.FC = () => {
   };
 
   return (
-    <NavigationContainer theme={AppNavTheme} onReady={handleReady}>
+    <NavigationContainer ref={navigationRef} theme={AppNavTheme} onReady={handleReady}>
       <Stack.Navigator
         initialRouteName="Bootstrap"
         screenOptions={{
@@ -105,6 +115,7 @@ export const RootNavigator: React.FC = () => {
           component={EditProfileScreen}
           options={{ presentation: 'modal' }}
         />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
 
         {/* Notifications */}
         <Stack.Screen name="Notifications" component={NotificationsScreen} />
@@ -127,6 +138,20 @@ export const RootNavigator: React.FC = () => {
         {/* Public Profile */}
         <Stack.Screen name="PublicProfile" component={PublicProfileScreen} />
       </Stack.Navigator>
+
+      {/* Global In-App Real-Time Notification & Direct Message Banner */}
+      <InAppNotificationBanner
+        onNavigateToChat={(conversationId, title) => {
+          if (navigationRef.isReady()) {
+            navigationRef.navigate('Chat', { conversationId, title });
+          }
+        }}
+        onNavigateToNotifications={() => {
+          if (navigationRef.isReady()) {
+            navigationRef.navigate('Notifications');
+          }
+        }}
+      />
     </NavigationContainer>
   );
 };

@@ -33,7 +33,7 @@ interface AiState {
   generateNewResume: (request: ResumeGenerateRequest) => Promise<ResumeDto | null>;
 }
 
-export const useAiStore = create<AiState>((set, get) => ({
+export const useAiStore = create<AiState>((set, _get) => ({
   messages: [
     {
       id: 'welcome-1',

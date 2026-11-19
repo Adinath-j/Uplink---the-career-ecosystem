@@ -70,8 +70,10 @@ export interface BackendExperience {
 
 export interface BackendCertification {
   id?: string;
-  name: string;
-  issuingOrg: string;
+  name?: string;
+  title?: string;
+  issuingOrg?: string;
+  issuer?: string;
   issueDate?: string;
   expiryDate?: string;
   credentialUrl?: string;
@@ -163,6 +165,8 @@ export function mapPortfolioToStudentProfile(dto: DigitalPortfolioDto): StudentP
       description: p.description || '',
       technologies: techArray,
       link: p.liveUrl || p.githubUrl,
+      githubUrl: p.githubUrl,
+      liveUrl: p.liveUrl,
     };
   });
 
@@ -176,14 +180,16 @@ export function mapPortfolioToStudentProfile(dto: DigitalPortfolioDto): StudentP
       organization: e.company,
       location: e.location,
       duration,
+      startDate: e.startDate,
+      endDate: e.endDate,
       description: e.description || '',
     };
   });
 
-  const certifications: MobileCertification[] = (dto.certifications || []).map((c) => ({
+  const certifications: MobileCertification[] = (dto.certifications || []).map((c: any) => ({
     id: c.id || `cert-${Date.now()}-${Math.random()}`,
-    name: c.name,
-    issuingOrganization: c.issuingOrg,
+    name: c.title || c.name || 'Certification',
+    issuingOrganization: c.issuer || c.issuingOrg || 'Issuing Authority',
     issueDate: c.issueDate || '',
     credentialUrl: c.credentialUrl,
   }));
@@ -467,7 +473,13 @@ class ProfileService {
   }
 
   async addCertification(certification: BackendCertification): Promise<ApiResponse<BackendCertification>> {
-    return apiClient.post<BackendCertification>('/profile/certifications', certification);
+    const payload = {
+      title: certification.title || certification.name || '',
+      issuer: certification.issuer || certification.issuingOrg || '',
+      issueDate: certification.issueDate,
+      credentialUrl: certification.credentialUrl,
+    };
+    return apiClient.post<BackendCertification>('/profile/certifications', payload);
   }
 
   async getCertifications(): Promise<ApiResponse<BackendCertification[]>> {
@@ -503,7 +515,13 @@ class ProfileService {
   }
 
   async updateCertification(id: string, certification: BackendCertification): Promise<ApiResponse<BackendCertification>> {
-    return apiClient.put<BackendCertification>(`/profile/certifications/${id}`, certification);
+    const payload = {
+      title: certification.title || certification.name || '',
+      issuer: certification.issuer || certification.issuingOrg || '',
+      issueDate: certification.issueDate,
+      credentialUrl: certification.credentialUrl,
+    };
+    return apiClient.put<BackendCertification>(`/profile/certifications/${id}`, payload);
   }
 
   async updateAchievement(id: string, achievement: BackendAchievement): Promise<ApiResponse<BackendAchievement>> {

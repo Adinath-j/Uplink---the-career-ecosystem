@@ -39,6 +39,7 @@ export type RootStackParamList = {
 
   MyProfile: undefined;
   EditProfile: undefined;
+  Settings: undefined;
   Notifications: undefined;
 
   // Messaging & Chat

@@ -6,8 +6,8 @@
  */
 
 // Available Backend Target Options:
-// 1. Live hosted Spring Boot backend on Render
-export const HOSTED_BACKEND_BASE_URL = 'https://uplink-kzh3.onrender.com/api';
+// 1. Live hosted Spring Boot backend on Railway
+export const HOSTED_BACKEND_BASE_URL = 'https://uplinkbackend-production.up.railway.app/api';
 
 // 2. Localhost via ADB reverse for physical USB device (run: adb reverse tcp:8080 tcp:8080)
 export const LOCAL_DEVICE_BASE_URL = 'http://localhost:8080/api';
@@ -23,7 +23,7 @@ export const LAN_BACKEND_BASE_URL = 'http://10.10.122.87:8080/api';
  * BACKEND ENVIRONMENT SWITCH FLAG
  * ===================================================================
  * Toggle this boolean to instantly switch between deployed & local:
- * - false: Points to deployed hosted Render backend (https://uplink-kzh3.onrender.com/api)
+ * - false: Points to deployed hosted Railway backend (https://uplinkbackend-production.up.railway.app/api)
  * - true : Points to local Spring Boot backend
  */
 export const USE_LOCAL_BACKEND = false;

@@ -9,6 +9,7 @@ import {
 } from '../services/authService';
 import { tokenStorage } from '../services/api/tokenStorage';
 import { apiClient } from '../services/api/apiClient';
+import { websocketService } from '../services/api/websocketService';
 
 interface AuthState {
   isAuthenticated: boolean;
@@ -192,6 +193,11 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
 
     signOut: async () => {
+      try {
+        websocketService.disconnect();
+      } catch {
+        // Ignore
+      }
       await authService.signOut();
       set({
         isAuthenticated: false,

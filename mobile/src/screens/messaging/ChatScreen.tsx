@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   Platform,
   ActivityIndicator,
   StyleSheet,
+  AppState,
+  AppStateStatus,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
@@ -33,22 +35,83 @@ export const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
     isLoadingMessages,
     isSending,
     error,
+    isConnectedToSocket,
+    connectionState,
+    typingUsers,
     fetchMessages,
     sendMessage,
     clearActiveMessages,
+    subscribeToConversation,
+    sendTyping,
+    initSocket,
+    markAsRead,
   } = useMessagingStore();
+
+  const typingUser = typingUsers[conversationId];
+  const lastTypingTimeRef = useRef<number>(0);
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     fetchMessages(conversationId);
+    markAsRead(conversationId);
+    const unsubscribe = subscribeToConversation(conversationId);
+
+    // Reconnect / re-sync when app returns from background
+    const appStateSub = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      if (nextState === 'active') {
+        initSocket();
+        fetchMessages(conversationId, true);
+        markAsRead(conversationId);
+      }
+    });
+
     return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      sendTyping(conversationId, false);
+      appStateSub.remove();
+      unsubscribe();
       clearActiveMessages();
     };
-  }, [conversationId, fetchMessages, clearActiveMessages]);
+  }, [conversationId, fetchMessages, markAsRead, subscribeToConversation, clearActiveMessages, initSocket, sendTyping]);
+
+  const handleTextChange = (text: string) => {
+    setInputText(text);
+
+    if (text.trim().length > 0) {
+      const now = Date.now();
+      // Throttle typing emission to once every 2 seconds
+      if (now - lastTypingTimeRef.current > 2000) {
+        lastTypingTimeRef.current = now;
+        sendTyping(conversationId, true);
+      }
+
+      // Reset auto-clear timer
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      typingTimeoutRef.current = setTimeout(() => {
+        sendTyping(conversationId, false);
+      }, 2500);
+    } else {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      sendTyping(conversationId, false);
+    }
+  };
 
   const handleSend = async () => {
     if (!inputText.trim() || isSending) return;
     const textToSend = inputText.trim();
     setInputText('');
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    sendTyping(conversationId, false);
+
     await sendMessage(conversationId, textToSend);
   };
 
@@ -70,6 +133,9 @@ export const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
         item.sender?.id === currentUser?.id ||
         item.sender?.email === currentUser?.email;
 
+      const isPending = item.status === 'SENDING';
+      const isFailed = item.status === 'FAILED';
+
       return (
         <View
           style={[
@@ -81,6 +147,7 @@ export const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
             style={[
               styles.bubble,
               isMine ? styles.myBubble : styles.theirBubble,
+              isPending && styles.pendingBubble,
             ]}
           >
             {!isMine && item.sender?.fullName ? (
@@ -96,14 +163,30 @@ export const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
               {item.content}
             </Text>
 
-            <Text
-              style={[
-                styles.timeText,
-                isMine ? styles.myTimeText : styles.theirTimeText,
-              ]}
-            >
-              {formatMessageTime(item.createdAt)}
-            </Text>
+            <View style={styles.bubbleFooter}>
+              <Text
+                style={[
+                  styles.timeText,
+                  isMine ? styles.myTimeText : styles.theirTimeText,
+                ]}
+              >
+                {formatMessageTime(item.createdAt)}
+              </Text>
+
+              {isMine && (
+                <View style={styles.statusIndicator}>
+                  {isPending ? (
+                    <Text style={styles.pendingText}>• sending</Text>
+                  ) : isFailed ? (
+                    <Text style={styles.failedText}>• failed</Text>
+                  ) : item.isRead ? (
+                    <Text style={styles.readText}>✓✓</Text>
+                  ) : (
+                    <Text style={styles.sentText}>✓</Text>
+                  )}
+                </View>
+              )}
+            </View>
           </View>
         </View>
       );
@@ -120,6 +203,36 @@ export const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
       <AppHeader
         title={title || 'Direct Message'}
         onBackPress={() => navigation.goBack()}
+        rightAction={
+          <View style={styles.connectionStatusPill}>
+            <View
+              style={[
+                styles.statusDot,
+                isConnectedToSocket
+                  ? styles.statusDotLive
+                  : connectionState === 'RECONNECTING'
+                  ? styles.statusDotReconnecting
+                  : styles.statusDotOffline,
+              ]}
+            />
+            <Text
+              style={[
+                styles.statusText,
+                isConnectedToSocket
+                  ? styles.statusTextLive
+                  : connectionState === 'RECONNECTING'
+                  ? styles.statusTextReconnecting
+                  : styles.statusTextOffline,
+              ]}
+            >
+              {isConnectedToSocket
+                ? 'Live'
+                : connectionState === 'RECONNECTING'
+                ? 'Syncing'
+                : 'Polling'}
+            </Text>
+          </View>
+        }
       />
 
       {isLoadingMessages && activeMessages.length === 0 ? (
@@ -133,12 +246,20 @@ export const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
         /* CRUCIAL: FlatList inverted for standard bottom-to-top chat stream */
         <FlatList
           data={activeMessages}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.clientMessageId || item.id}
           renderItem={renderMessageItem}
           inverted
           contentContainerStyle={styles.messageList}
         />
       )}
+
+      {/* Typing banner indicator */}
+      {typingUser ? (
+        <View style={styles.typingContainer}>
+          <View style={styles.typingDot} />
+          <Text style={styles.typingText}>{typingUser} is typing...</Text>
+        </View>
+      ) : null}
 
       {/* Input bar */}
       <View style={styles.inputContainer}>
@@ -147,7 +268,7 @@ export const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
           placeholder="Type a message..."
           placeholderTextColor={colors.textSecondary}
           value={inputText}
-          onChangeText={setInputText}
+          onChangeText={handleTextChange}
           multiline
           maxLength={1000}
         />
@@ -201,6 +322,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderBottomRightRadius: 2,
   },
+  pendingBubble: {
+    opacity: 0.82,
+  },
   theirBubble: {
     backgroundColor: '#F3F4F6',
     borderBottomLeftRadius: 2,
@@ -223,17 +347,66 @@ const styles = StyleSheet.create({
   theirMessageText: {
     color: colors.text,
   },
+  bubbleFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginTop: 4,
+    gap: 4,
+  },
   timeText: {
     ...typography.caption,
     fontSize: 10,
-    marginTop: 4,
-    alignSelf: 'flex-end',
   },
   myTimeText: {
     color: 'rgba(255, 255, 255, 0.75)',
   },
   theirTimeText: {
     color: colors.textSecondary,
+  },
+  statusIndicator: {
+    marginLeft: 2,
+  },
+  pendingText: {
+    fontSize: 9,
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontStyle: 'italic',
+  },
+  failedText: {
+    fontSize: 9,
+    color: '#FCA5A5',
+    fontWeight: '700',
+  },
+  sentText: {
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.7)',
+  },
+  readText: {
+    fontSize: 10,
+    color: '#93C5FD',
+    fontWeight: 'bold',
+  },
+  typingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[4],
+    paddingVertical: 6,
+    backgroundColor: '#F8FAFC',
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+    gap: 6,
+  },
+  typingDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primary,
+  },
+  typingText: {
+    ...typography.caption,
+    fontSize: 12,
+    color: colors.primary,
+    fontStyle: 'italic',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -268,5 +441,42 @@ const styles = StyleSheet.create({
   },
   sendButtonDisabled: {
     backgroundColor: '#93C5FD',
+  },
+  connectionStatusPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: radii.full,
+    backgroundColor: '#F1F5F9',
+    gap: 5,
+  },
+  statusDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  },
+  statusDotLive: {
+    backgroundColor: '#10B981',
+  },
+  statusDotReconnecting: {
+    backgroundColor: '#F59E0B',
+  },
+  statusDotOffline: {
+    backgroundColor: '#94A3B8',
+  },
+  statusText: {
+    ...typography.caption,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  statusTextLive: {
+    color: '#059669',
+  },
+  statusTextReconnecting: {
+    color: '#D97706',
+  },
+  statusTextOffline: {
+    color: '#64748B',
   },
 });

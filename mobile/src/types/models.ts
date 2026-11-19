@@ -11,6 +11,8 @@ export interface Project {
   description: string;
   technologies: string[];
   link?: string;
+  githubUrl?: string;
+  liveUrl?: string;
   startDate?: string;
   endDate?: string;
 }
@@ -21,6 +23,8 @@ export interface Experience {
   organization: string;
   location?: string;
   duration: string;
+  startDate?: string;
+  endDate?: string;
   description: string;
 }
 

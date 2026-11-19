@@ -13,6 +13,8 @@ import {
   Rss,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
   ArrowLeft,
   X,
   Check,
@@ -37,6 +39,10 @@ import {
   Download,
   RotateCw,
   Globe,
+  Settings,
+  Trash2,
+  Lock,
+  Shield,
   type LucideIcon,
 } from 'lucide-react-native';
 import { colors } from '../../theme';
@@ -57,6 +63,8 @@ export type IconName =
   | 'rss'
   | 'chevron-right'
   | 'chevron-left'
+  | 'chevron-down'
+  | 'chevron-up'
   | 'arrow-left'
   | 'close'
   | 'check'
@@ -80,7 +88,11 @@ export type IconName =
   | 'check-square'
   | 'download'
   | 'refresh'
-  | 'globe';
+  | 'globe'
+  | 'settings'
+  | 'trash'
+  | 'lock'
+  | 'shield';
 
 interface IconProps {
   name: IconName;
@@ -107,6 +119,8 @@ const ICON_MAP: Record<IconName, LucideIcon> = {
   users: Users,
   'chevron-right': ChevronRight,
   'chevron-left': ChevronLeft,
+  'chevron-down': ChevronDown,
+  'chevron-up': ChevronUp,
   'arrow-left': ArrowLeft,
   close: X,
   check: Check,
@@ -131,6 +145,10 @@ const ICON_MAP: Record<IconName, LucideIcon> = {
   download: Download,
   refresh: RotateCw,
   globe: Globe,
+  settings: Settings,
+  trash: Trash2,
+  lock: Lock,
+  shield: Shield,
 };
 
 export const Icon: React.FC<IconProps> = ({

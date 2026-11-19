@@ -15,7 +15,7 @@ interface VerificationState {
   submitVerification: (request: VerificationSubmitRequest) => Promise<boolean>;
 }
 
-export const useVerificationStore = create<VerificationState>((set, get) => ({
+export const useVerificationStore = create<VerificationState>((set, _get) => ({
   verifications: [],
   isLoading: false,
   isSubmitting: false,

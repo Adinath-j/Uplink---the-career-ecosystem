@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -39,7 +39,7 @@ export interface ConnectionCandidate {
 export const NetworkScreen: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const currentUserId = useAuthStore((state) => state.user?.id);
-  const { createConversation } = useMessagingStore();
+  const { getOrCreateConversation } = useMessagingStore();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -47,7 +47,7 @@ export const NetworkScreen: React.FC = () => {
   const [connections, setConnections] = useState<ConnectionCandidate[]>([]);
   const [connectingUserId, setConnectingUserId] = useState<string | null>(null);
 
-  const fetchCommunityConnections = async () => {
+  const fetchCommunityConnections = useCallback(async () => {
     try {
       const res = await contentService.getFeed('All', 0, 50);
       if (res.success && res.data) {
@@ -90,11 +90,11 @@ export const NetworkScreen: React.FC = () => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  };
+  }, [currentUserId]);
 
   useEffect(() => {
     fetchCommunityConnections();
-  }, [currentUserId]);
+  }, [fetchCommunityConnections]);
 
   const onRefresh = async () => {
     setIsRefreshing(true);
@@ -119,7 +119,7 @@ export const NetworkScreen: React.FC = () => {
     setConnectingUserId(candidate.id);
 
     try {
-      const convo = await createConversation([candidate.id]);
+      const convo = await getOrCreateConversation(candidate.id);
       if (convo && convo.id) {
         navigation.navigate('Chat', {
           conversationId: convo.id,

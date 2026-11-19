@@ -1,4 +1,5 @@
 import { apiClient } from './api/apiClient';
+import { ENV } from '../config/env';
 
 export interface ResumeGenerateRequest {
   template: 'MODERN' | 'CLASSIC' | 'ACADEMIC' | 'EXECUTIVE' | string;
@@ -34,6 +35,6 @@ export const resumeService = {
    * Get resume download URL
    */
   getResumeDownloadUrl(userId: string, version: number = 1): string {
-    return `https://uplink-kzh3.onrender.com/api/resume/download/${userId}?version=${version}`;
+    return `${ENV.API_BASE_URL}/resume/download/${userId}?version=${version}`;
   },
 };

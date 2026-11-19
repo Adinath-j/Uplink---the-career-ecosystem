@@ -18,6 +18,7 @@ import { StatusBadge } from '../../components/common/StatusBadge';
 import { Icon } from '../../components/common/Icon';
 import { colors, typography, spacing, radii } from '../../theme';
 import { useAiStore } from '../../store/aiStore';
+import { ENV } from '../../config/env';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -79,7 +80,7 @@ export const ResumeBuilderScreen: React.FC = () => {
   };
 
   const handleDownload = () => {
-    const url = latestResume?.pdfDownloadUrl || 'https://uplink-kzh3.onrender.com/api/resume/download/current-user';
+    const url = latestResume?.pdfDownloadUrl || `${ENV.API_BASE_URL}/resume/download/current-user`;
     Linking.canOpenURL(url).then((supported) => {
       if (supported) {
         Linking.openURL(url);

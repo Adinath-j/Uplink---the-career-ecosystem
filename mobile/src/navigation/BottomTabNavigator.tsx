@@ -21,8 +21,8 @@ const JobsTabIcon = ({ color, size }: { color: string; size: number }) => (
   <Icon name="briefcase" size={size || 22} color={color} />
 );
 
-const NetworkTabIcon = ({ color, size }: { color: string; size: number }) => (
-  <Icon name="globe" size={size || 22} color={color} />
+const SendIcon = ({ color, size }: { color: string; size: number }) => (
+  <Icon name="send" size={size || 22} color={color} />
 );
 
 const QATabIcon = ({ color, size }: { color: string; size: number }) => (
@@ -74,8 +74,8 @@ export const BottomTabNavigator: React.FC = () => {
         name="Network"
         component={NetworkScreen}
         options={{
-          tabBarLabel: 'Network',
-          tabBarIcon: NetworkTabIcon,
+          tabBarLabel: 'Messages',
+          tabBarIcon: SendIcon,
         }}
       />
       <Tab.Screen

@@ -17,8 +17,11 @@ import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Icon } from '../../components/common/Icon';
 import { LoadingState } from '../../components/common/LoadingState';
-import { colors, typography, spacing, radii } from '../../theme';
+import { typography, spacing, radii } from '../../theme';
+import { useTheme, useThemedStyles } from '../../theme/ThemeContext';
+import { ColorPalette } from '../../theme/colors';
 import { useVerificationStore } from '../../store/verificationStore';
+import { validateDocumentUrl, validateVerificationRemarks } from '../../utils/validation';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -29,6 +32,8 @@ const DOCUMENT_TYPES = [
 ];
 
 export const VerificationUploadScreen: React.FC = () => {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NavigationProp>();
   const {
     verifications,
@@ -41,6 +46,7 @@ export const VerificationUploadScreen: React.FC = () => {
   const [selectedType, setSelectedType] = useState('COLLEGE_ID');
   const [documentUrl, setDocumentUrl] = useState('');
   const [remarks, setRemarks] = useState('');
+  const [errors, setErrors] = useState<{ documentUrl?: string; remarks?: string }>({});
 
   useEffect(() => {
     fetchMyVerifications();
@@ -50,11 +56,18 @@ export const VerificationUploadScreen: React.FC = () => {
   const hasPending = verifications.some((v) => v.status === 'PENDING');
 
   const handleSubmit = async () => {
-    if (!documentUrl.trim()) {
-      Alert.alert('Document Required', 'Please provide a valid document URL or image link.');
+    const docErr = validateDocumentUrl(documentUrl);
+    const remErr = validateVerificationRemarks(remarks);
+
+    if (docErr || remErr) {
+      setErrors({
+        documentUrl: docErr || undefined,
+        remarks: remErr || undefined,
+      });
       return;
     }
 
+    setErrors({});
     const success = await submitVerification({
       type: selectedType,
       documentUrl: documentUrl.trim(),
@@ -73,6 +86,9 @@ export const VerificationUploadScreen: React.FC = () => {
 
   const handleUseSampleUrl = () => {
     setDocumentUrl('https://uplink-kzh3.onrender.com/static/samples/student_id_proof.pdf');
+    if (errors.documentUrl) {
+      setErrors((prev) => ({ ...prev, documentUrl: undefined }));
+    }
   };
 
   return (
@@ -95,7 +111,7 @@ export const VerificationUploadScreen: React.FC = () => {
         {/* Verification Status Banner */}
         {hasApproved ? (
           <View style={[styles.statusHero, styles.statusHeroApproved]}>
-            <Icon name="check-circle" size={24} color="#10B981" />
+            <Icon name="check-circle" size={24} color={colors.success} />
             <View style={{ flex: 1 }}>
               <Text style={styles.statusHeroTitle}>Verified Institutional Profile</Text>
               <Text style={styles.statusHeroSubtitle}>
@@ -105,7 +121,7 @@ export const VerificationUploadScreen: React.FC = () => {
           </View>
         ) : hasPending ? (
           <View style={[styles.statusHero, styles.statusHeroPending]}>
-            <Icon name="clock" size={24} color="#F59E0B" />
+            <Icon name="clock" size={24} color={colors.warning} />
             <View style={{ flex: 1 }}>
               <Text style={styles.statusHeroTitle}>Verification in Review</Text>
               <Text style={styles.statusHeroSubtitle}>
@@ -170,26 +186,34 @@ export const VerificationUploadScreen: React.FC = () => {
             </TouchableOpacity>
           </View>
           <TextInput
-            style={styles.input}
+            style={[styles.input, errors.documentUrl ? styles.inputError : null]}
             value={documentUrl}
-            onChangeText={setDocumentUrl}
+            onChangeText={(text) => {
+              setDocumentUrl(text);
+              if (errors.documentUrl) setErrors((prev) => ({ ...prev, documentUrl: undefined }));
+            }}
             placeholder="https://drive.google.com/... or cloud storage URL"
-            placeholderTextColor={colors.textSecondary}
+            placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
           />
+          {errors.documentUrl ? <Text style={styles.fieldError}>{errors.documentUrl}</Text> : null}
 
           <Text style={[styles.inputLabel, { marginTop: spacing[3] }]}>
             Additional Notes for Reviewer (Optional)
           </Text>
           <TextInput
-            style={[styles.input, styles.multilineInput]}
+            style={[styles.input, styles.multilineInput, errors.remarks ? styles.inputError : null]}
             value={remarks}
-            onChangeText={setRemarks}
+            onChangeText={(text) => {
+              setRemarks(text);
+              if (errors.remarks) setErrors((prev) => ({ ...prev, remarks: undefined }));
+            }}
             placeholder="e.g., Enrollment ID: CS-2024-042, Student Council member"
-            placeholderTextColor={colors.textSecondary}
+            placeholderTextColor={colors.textMuted}
             multiline
             numberOfLines={3}
           />
+          {errors.remarks ? <Text style={styles.fieldError}>{errors.remarks}</Text> : null}
         </View>
 
         <PrimaryButton
@@ -260,181 +284,192 @@ export const VerificationUploadScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    padding: spacing[4],
-    paddingBottom: spacing[8],
-  },
-  statusHero: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-    padding: spacing[4],
-    borderRadius: radii.md,
-    borderWidth: 1,
-    marginBottom: spacing[4],
-  },
-  statusHeroApproved: {
-    backgroundColor: '#ECFDF5',
-    borderColor: '#A7F3D0',
-  },
-  statusHeroPending: {
-    backgroundColor: '#FFFBEB',
-    borderColor: '#FDE68A',
-  },
-  statusHeroNeutral: {
-    backgroundColor: '#EFF6FF',
-    borderColor: '#BFDBFE',
-  },
-  statusHeroTitle: {
-    ...typography.label,
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 2,
-  },
-  statusHeroSubtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  sectionTitle: {
-    ...typography.h3,
-    fontSize: 15,
-    color: colors.text,
-    marginBottom: spacing[2],
-  },
-  typeSelector: {
-    gap: spacing[2],
-  },
-  typeCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    padding: spacing[3],
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  typeCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: '#F8FAFC',
-  },
-  typeCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  typeCardLabel: {
-    ...typography.label,
-    fontSize: 14,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  typeCardLabelSelected: {
-    color: colors.primary,
-  },
-  typeCardDesc: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  formCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing[1],
-  },
-  inputLabel: {
-    ...typography.label,
-    fontSize: 13,
-    color: colors.text,
-  },
-  sampleLinkText: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  input: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    color: colors.text,
-    fontSize: 14,
-  },
-  multilineInput: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  emptyHistoryCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    padding: spacing[6],
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  emptyHistoryTitle: {
-    ...typography.label,
-    fontSize: 14,
-    color: colors.text,
-    marginTop: spacing[2],
-  },
-  emptyHistoryDesc: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  historyList: {
-    gap: spacing[2],
-  },
-  historyCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    padding: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  historyHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing[2],
-  },
-  historyTypeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  historyTypeText: {
-    ...typography.label,
-    fontSize: 13,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  historyUrlText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: 4,
-  },
-  historyRemarksText: {
-    ...typography.caption,
-    color: colors.textMuted,
-    fontStyle: 'italic',
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      padding: spacing[4],
+      paddingBottom: spacing[8],
+    },
+    statusHero: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[3],
+      padding: spacing[4],
+      borderRadius: radii.md,
+      borderWidth: 1,
+      marginBottom: spacing[4],
+    },
+    statusHeroApproved: {
+      backgroundColor: colors.successSoft,
+      borderColor: colors.success,
+    },
+    statusHeroPending: {
+      backgroundColor: colors.warningSoft,
+      borderColor: colors.warning,
+    },
+    statusHeroNeutral: {
+      backgroundColor: colors.primarySoft,
+      borderColor: colors.primary,
+    },
+    statusHeroTitle: {
+      ...typography.label,
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.textPrimary,
+      marginBottom: 2,
+    },
+    statusHeroSubtitle: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      lineHeight: 18,
+    },
+    sectionTitle: {
+      ...typography.h3,
+      fontSize: 15,
+      color: colors.textPrimary,
+      marginBottom: spacing[2],
+    },
+    typeSelector: {
+      gap: spacing[2],
+    },
+    typeCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.md,
+      padding: spacing[3],
+      borderWidth: 1.5,
+      borderColor: colors.border,
+    },
+    typeCardSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.surfaceElevated,
+    },
+    typeCardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
+    typeCardLabel: {
+      ...typography.label,
+      fontSize: 14,
+      color: colors.textPrimary,
+      fontWeight: '600',
+    },
+    typeCardLabelSelected: {
+      color: colors.primary,
+    },
+    typeCardDesc: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      lineHeight: 18,
+    },
+    formCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.md,
+      padding: spacing[4],
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    labelRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing[1],
+    },
+    inputLabel: {
+      ...typography.label,
+      fontSize: 13,
+      color: colors.textPrimary,
+    },
+    sampleLinkText: {
+      ...typography.caption,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    input: {
+      backgroundColor: colors.inputBg,
+      borderRadius: radii.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+      color: colors.textPrimary,
+      fontSize: 14,
+    },
+    inputError: {
+      borderColor: colors.danger,
+      borderWidth: 1.5,
+    },
+    fieldError: {
+      ...typography.caption,
+      color: colors.danger,
+      marginTop: 4,
+      marginLeft: 2,
+    },
+    multilineInput: {
+      minHeight: 80,
+      textAlignVertical: 'top',
+    },
+    emptyHistoryCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.md,
+      padding: spacing[6],
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    emptyHistoryTitle: {
+      ...typography.label,
+      fontSize: 14,
+      color: colors.textPrimary,
+      marginTop: spacing[2],
+    },
+    emptyHistoryDesc: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      marginTop: 4,
+    },
+    historyList: {
+      gap: spacing[2],
+    },
+    historyCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.md,
+      padding: spacing[3],
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    historyHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing[2],
+    },
+    historyTypeBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    historyTypeText: {
+      ...typography.label,
+      fontSize: 13,
+      color: colors.textPrimary,
+      fontWeight: '600',
+    },
+    historyUrlText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginBottom: 4,
+    },
+    historyRemarksText: {
+      ...typography.caption,
+      color: colors.textMuted,
+      fontStyle: 'italic',
+    },
+  });

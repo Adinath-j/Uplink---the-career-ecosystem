@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useThemedStyles, ColorPalette } from '../../theme';
 import { AppHeader } from '../../components/common/AppHeader';
 import { StatusBadge, StatusVariant } from '../../components/common/StatusBadge';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -13,6 +13,7 @@ import { ApplicationRecord } from '../../types/models';
 type Props = NativeStackScreenProps<RootStackParamList, 'MyApplications'>;
 
 export const MyApplicationsScreen: React.FC<Props> = ({ navigation }) => {
+  const { styles, colors } = useThemedStyles(createStyles);
   const { myApplications, fetchMyApplications } = useOpportunityStore();
 
   useEffect(() => {
@@ -108,53 +109,54 @@ export const MyApplicationsScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  listContent: {
-    padding: spacing[4],
-    gap: spacing[3],
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    padding: spacing[4],
-  },
-  cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing[2],
-  },
-  dateText: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  title: {
-    ...typography.cardTitle,
-    color: colors.text,
-    marginBottom: 2,
-  },
-  org: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing[2],
-  },
-  notesBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.surfaceMuted,
-    padding: spacing[2],
-    borderRadius: radii.sm,
-    marginTop: spacing[1],
-  },
-  notesText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    listContent: {
+      padding: spacing[4],
+      gap: spacing[3],
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.md,
+      padding: spacing[4],
+    },
+    cardTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing[2],
+    },
+    dateText: {
+      ...typography.caption,
+      color: colors.textMuted,
+    },
+    title: {
+      ...typography.cardTitle,
+      color: colors.text,
+      marginBottom: 2,
+    },
+    org: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      marginBottom: spacing[2],
+    },
+    notesBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: colors.surfaceMuted,
+      padding: spacing[2],
+      borderRadius: radii.sm,
+      marginTop: spacing[1],
+    },
+    notesText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+  });

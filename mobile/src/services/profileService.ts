@@ -527,6 +527,24 @@ class ProfileService {
   async updateAchievement(id: string, achievement: BackendAchievement): Promise<ApiResponse<BackendAchievement>> {
     return apiClient.put<BackendAchievement>(`/profile/achievements/${id}`, achievement);
   }
+
+  /**
+   * Upload profile avatar image to Cloudinary via Spring Boot backend
+   */
+  async uploadAvatar(fileUri: string, mimeType: string = 'image/jpeg', fileName: string = 'avatar.jpg'): Promise<string> {
+    const formData = new FormData();
+    formData.append('file', {
+      uri: fileUri,
+      type: mimeType,
+      name: fileName,
+    } as any);
+
+    const res = await apiClient.postFormData<any>('/profile/avatar', formData);
+    if (res.success && res.data) {
+      return res.data.profilePicture || res.data.profile_picture || '';
+    }
+    throw new Error(res.error || 'Failed to upload avatar image');
+  }
 }
 
 export const profileService = new ProfileService();

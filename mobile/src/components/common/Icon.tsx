@@ -43,9 +43,13 @@ import {
   Trash2,
   Lock,
   Shield,
+  Sun,
+  Moon,
+  Monitor,
+  Smartphone,
   type LucideIcon,
 } from 'lucide-react-native';
-import { colors } from '../../theme';
+import { colors, useTheme } from '../../theme';
 
 export type IconName =
   | 'home'
@@ -92,7 +96,12 @@ export type IconName =
   | 'settings'
   | 'trash'
   | 'lock'
-  | 'shield';
+  | 'shield'
+  | 'sun'
+  | 'moon'
+  | 'monitor'
+  | 'smartphone'
+  | 'system';
 
 interface IconProps {
   name: IconName;
@@ -149,25 +158,32 @@ const ICON_MAP: Record<IconName, LucideIcon> = {
   trash: Trash2,
   lock: Lock,
   shield: Shield,
+  sun: Sun,
+  moon: Moon,
+  monitor: Monitor,
+  smartphone: Smartphone,
+  system: Smartphone,
 };
 
 export const Icon: React.FC<IconProps> = ({
   name,
   size = 20,
-  color = colors.text,
+  color,
   strokeWidth = 2,
   fill,
   style,
 }) => {
+  const { colors: themeColors } = useTheme();
+  const iconColor = color || themeColors?.text || colors.text;
   const Component = ICON_MAP[name] || CircleHelp;
   const isFilledBookmark = name === 'bookmark-fill';
 
   return (
     <Component
       size={size}
-      color={color}
+      color={iconColor}
       strokeWidth={strokeWidth}
-      fill={fill || (isFilledBookmark ? color : 'none')}
+      fill={fill || (isFilledBookmark ? iconColor : 'none')}
       style={style}
     />
   );

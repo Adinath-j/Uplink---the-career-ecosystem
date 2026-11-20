@@ -12,7 +12,7 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../types/navigation';
-import { colors, spacing, typography } from '../../theme';
+import { spacing, typography, useThemedStyles, ColorPalette } from '../../theme';
 import { Icon, IconName } from '../../components/common/Icon';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { usePreferencesStore } from '../../store/preferencesStore';
@@ -58,6 +58,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { styles, colors } = useThemedStyles(createStyles);
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<FlatList>(null);
   const { setOnboardingCompleted } = usePreferencesStore();
@@ -162,105 +163,106 @@ export const OnboardingScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-    justifyContent: 'space-between',
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing[4],
-    height: 48,
-  },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  brandText: {
-    ...typography.label,
-    fontSize: 14,
-    fontWeight: '800',
-    color: colors.primary,
-    letterSpacing: 1,
-  },
-  skipButton: {
-    paddingHorizontal: spacing[2],
-    paddingVertical: spacing[1],
-  },
-  skipText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  skipPlaceholder: {
-    width: 40,
-  },
-  slide: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing[6],
-  },
-  iconWrapper: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing[6],
-  },
-  slideSubtitle: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    marginBottom: spacing[1],
-  },
-  slideTitle: {
-    ...typography.screenTitle,
-    fontSize: 22,
-    color: colors.text,
-    textAlign: 'center',
-    marginBottom: spacing[3],
-  },
-  slideDescription: {
-    ...typography.body,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 22,
-    maxWidth: 320,
-  },
-  footer: {
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[2],
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: spacing[4],
-  },
-  dot: {
-    height: 6,
-    borderRadius: 3,
-  },
-  activeDot: {
-    width: 24,
-    backgroundColor: colors.primary,
-  },
-  inactiveDot: {
-    width: 6,
-    backgroundColor: colors.border,
-  },
-  actionButton: {
-    width: '100%',
-  },
-});
+const createStyles = (colors: ColorPalette, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+      justifyContent: 'space-between',
+    },
+    topBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: spacing[4],
+      height: 48,
+    },
+    brandRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    brandText: {
+      ...typography.label,
+      fontSize: 14,
+      fontWeight: '800',
+      color: colors.primary,
+      letterSpacing: 1,
+    },
+    skipButton: {
+      paddingHorizontal: spacing[2],
+      paddingVertical: spacing[1],
+    },
+    skipText: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    skipPlaceholder: {
+      width: 40,
+    },
+    slide: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: spacing[6],
+    },
+    iconWrapper: {
+      width: 96,
+      height: 96,
+      borderRadius: 48,
+      backgroundColor: colors.primarySoft,
+      borderWidth: 1,
+      borderColor: isDark ? colors.primary : '#DBEAFE',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing[6],
+    },
+    slideSubtitle: {
+      ...typography.caption,
+      color: colors.primary,
+      fontWeight: '600',
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+      marginBottom: spacing[1],
+    },
+    slideTitle: {
+      ...typography.screenTitle,
+      fontSize: 22,
+      color: colors.text,
+      textAlign: 'center',
+      marginBottom: spacing[3],
+    },
+    slideDescription: {
+      ...typography.body,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 22,
+      maxWidth: 320,
+    },
+    footer: {
+      paddingHorizontal: spacing[4],
+      paddingTop: spacing[2],
+    },
+    dotsRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 8,
+      marginBottom: spacing[4],
+    },
+    dot: {
+      height: 6,
+      borderRadius: 3,
+    },
+    activeDot: {
+      width: 24,
+      backgroundColor: colors.primary,
+    },
+    inactiveDot: {
+      width: 6,
+      backgroundColor: colors.border,
+    },
+    actionButton: {
+      width: '100%',
+    },
+  });

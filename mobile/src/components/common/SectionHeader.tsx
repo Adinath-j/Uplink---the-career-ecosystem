@@ -6,7 +6,7 @@ import {
   StyleSheet,
   ViewStyle,
 } from 'react-native';
-import { colors, spacing, typography } from '../../theme';
+import { spacing, typography, useTheme } from '../../theme';
 import { Icon } from './Icon';
 
 interface SectionHeaderProps {
@@ -22,9 +22,11 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   actionLabel,
   style,
 }) => {
+  const { colors } = useTheme();
+
   return (
     <View style={[styles.container, style]}>
-      <Text style={styles.title}>{title}</Text>
+      <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
       {onActionPress && (
         <TouchableOpacity
           onPress={onActionPress}
@@ -33,7 +35,9 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
           accessibilityRole="button"
           accessibilityLabel={actionLabel || 'See all'}
         >
-          <Text style={styles.actionText}>{actionLabel || 'See all'}</Text>
+          <Text style={[styles.actionText, { color: colors.primary }]}>
+            {actionLabel || 'See all'}
+          </Text>
           <Icon name="chevron-right" size={16} color={colors.primary} />
         </TouchableOpacity>
       )}
@@ -52,7 +56,6 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.sectionTitle,
-    color: colors.text,
   },
   action: {
     flexDirection: 'row',
@@ -61,7 +64,6 @@ const styles = StyleSheet.create({
   },
   actionText: {
     ...typography.bodySmall,
-    color: colors.primary,
     fontWeight: '600',
     marginRight: 2,
   },

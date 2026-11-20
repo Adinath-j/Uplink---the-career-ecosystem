@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
 import { Mentor } from '../../types/models';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useThemedStyles, ColorPalette } from '../../theme';
 import { AppHeader } from '../../components/common/AppHeader';
 import { Avatar } from '../../components/common/Avatar';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
@@ -16,6 +16,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'MentorDetail'>;
 
 export const MentorDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { mentorId } = route.params;
+  const { styles, colors } = useThemedStyles(createStyles);
   const [mentor, setMentor] = useState<Mentor | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -145,133 +146,136 @@ export const MentorDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing[4],
-    paddingBottom: spacing[12],
-  },
-  profileHeader: {
-    alignItems: 'center',
-    paddingVertical: spacing[3],
-  },
-  name: {
-    ...typography.screenTitle,
-    fontSize: 20,
-    marginTop: spacing[3],
-    marginBottom: 2,
-  },
-  designation: {
-    ...typography.body,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 2,
-  },
-  org: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing[3],
-  },
-  availBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.successSoft,
-    paddingHorizontal: spacing[3],
-    paddingVertical: 4,
-    borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-  },
-  greenDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.success,
-  },
-  availText: {
-    ...typography.caption,
-    color: colors.success,
-    fontWeight: '600',
-  },
-  busyBadge: {
-    backgroundColor: colors.surfaceMuted,
-    borderColor: colors.border,
-  },
-  busyText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: spacing[4],
-  },
-  section: {
-    marginBottom: spacing[4],
-  },
-  sectionHeading: {
-    ...typography.sectionTitle,
-    fontSize: 15,
-    marginBottom: spacing[2],
-  },
-  bodyText: {
-    ...typography.body,
-    color: colors.text,
-    lineHeight: 22,
-  },
-  availBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    backgroundColor: colors.surfaceMuted,
-    padding: spacing[3],
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  availWindowText: {
-    ...typography.bodySmall,
-    color: colors.text,
-  },
-  tagWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[2],
-  },
-  domainBadge: {
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing[3],
-    paddingVertical: 4,
-  },
-  domainText: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  skillBadge: {
-    backgroundColor: colors.surfaceMuted,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing[3],
-    paddingVertical: 4,
-  },
-  skillText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  footerBar: {
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    padding: spacing[3],
-  },
-});
+const createStyles = (colors: ColorPalette, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: spacing[4],
+      paddingBottom: spacing[12],
+    },
+    profileHeader: {
+      alignItems: 'center',
+      paddingVertical: spacing[3],
+    },
+    name: {
+      ...typography.screenTitle,
+      color: colors.text,
+      fontSize: 20,
+      marginTop: spacing[3],
+      marginBottom: 2,
+    },
+    designation: {
+      ...typography.body,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: 2,
+    },
+    org: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      marginBottom: spacing[3],
+    },
+    availBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.successSoft,
+      paddingHorizontal: spacing[3],
+      paddingVertical: 4,
+      borderRadius: radii.full,
+      borderWidth: 1,
+      borderColor: isDark ? colors.success : '#BBF7D0',
+    },
+    greenDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.success,
+    },
+    availText: {
+      ...typography.caption,
+      color: colors.success,
+      fontWeight: '600',
+    },
+    busyBadge: {
+      backgroundColor: colors.surfaceMuted,
+      borderColor: colors.border,
+    },
+    busyText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    divider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginVertical: spacing[4],
+    },
+    section: {
+      marginBottom: spacing[4],
+    },
+    sectionHeading: {
+      ...typography.sectionTitle,
+      color: colors.text,
+      fontSize: 15,
+      marginBottom: spacing[2],
+    },
+    bodyText: {
+      ...typography.body,
+      color: colors.text,
+      lineHeight: 22,
+    },
+    availBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[2],
+      backgroundColor: colors.surfaceMuted,
+      padding: spacing[3],
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    availWindowText: {
+      ...typography.bodySmall,
+      color: colors.text,
+    },
+    tagWrap: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing[2],
+    },
+    domainBadge: {
+      backgroundColor: colors.primarySoft,
+      borderWidth: 1,
+      borderColor: isDark ? colors.primary : '#BFDBFE',
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing[3],
+      paddingVertical: 4,
+    },
+    domainText: {
+      ...typography.caption,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    skillBadge: {
+      backgroundColor: colors.surfaceMuted,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing[3],
+      paddingVertical: 4,
+    },
+    skillText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    footerBar: {
+      backgroundColor: colors.surface,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      padding: spacing[3],
+    },
+  });

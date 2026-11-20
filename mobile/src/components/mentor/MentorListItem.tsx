@@ -7,7 +7,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Mentor } from '../../types/models';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useThemedStyles, ColorPalette } from '../../theme';
 import { Avatar } from '../common/Avatar';
 import { PrimaryButton } from '../common/PrimaryButton';
 
@@ -24,6 +24,8 @@ export const MentorListItem: React.FC<MentorListItemProps> = ({
   onBookPress,
   style,
 }) => {
+  const { styles } = useThemedStyles(createStyles);
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -66,58 +68,59 @@ export const MentorListItem: React.FC<MentorListItemProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.surface,
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  contentRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  infoCol: {
-    flex: 1,
-    marginLeft: spacing[3],
-    marginRight: spacing[2],
-  },
-  name: {
-    ...typography.cardTitle,
-    color: colors.text,
-    marginBottom: 2,
-  },
-  role: {
-    ...typography.bodySmall,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  org: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: spacing[2],
-  },
-  skillsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-  },
-  skillChip: {
-    backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: colors.borderLight,
-  },
-  skillText: {
-    ...typography.caption,
-    fontSize: 10,
-    color: colors.textSecondary,
-  },
-  actionCol: {
-    justifyContent: 'center',
-    alignSelf: 'center',
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: colors.surface,
+      paddingVertical: spacing[3],
+      paddingHorizontal: spacing[4],
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    contentRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+    },
+    infoCol: {
+      flex: 1,
+      marginLeft: spacing[3],
+      marginRight: spacing[2],
+    },
+    name: {
+      ...typography.cardTitle,
+      color: colors.text,
+      marginBottom: 2,
+    },
+    role: {
+      ...typography.bodySmall,
+      color: colors.text,
+      fontWeight: '500',
+    },
+    org: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginBottom: spacing[2],
+    },
+    skillsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 4,
+    },
+    skillChip: {
+      backgroundColor: colors.surfaceMuted,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: radii.sm,
+      borderWidth: 1,
+      borderColor: colors.borderLight,
+    },
+    skillText: {
+      ...typography.caption,
+      fontSize: 10,
+      color: colors.textSecondary,
+    },
+    actionCol: {
+      justifyContent: 'center',
+      alignSelf: 'center',
+    },
+  });

@@ -6,7 +6,9 @@ import {
   StyleSheet,
   ViewStyle,
 } from 'react-native';
-import { colors, spacing, typography } from '../../theme';
+import { spacing, typography } from '../../theme';
+import { useTheme, useThemedStyles } from '../../theme/ThemeContext';
+import { ColorPalette } from '../../theme/colors';
 import { Icon } from '../common/Icon';
 
 interface ProfileSectionProps {
@@ -25,6 +27,9 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   children,
   style,
 }) => {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   return (
     <View style={[styles.container, style]}>
       <View style={styles.header}>
@@ -47,37 +52,38 @@ export const ProfileSection: React.FC<ProfileSectionProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing[2],
-  },
-  title: {
-    ...typography.sectionTitle,
-    fontSize: 15,
-    color: colors.text,
-  },
-  action: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    paddingVertical: 2,
-  },
-  actionText: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  body: {
-    marginTop: spacing[1],
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: colors.surface,
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing[2],
+    },
+    title: {
+      ...typography.sectionTitle,
+      fontSize: 15,
+      color: colors.textPrimary,
+    },
+    action: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+      paddingVertical: 2,
+    },
+    actionText: {
+      ...typography.caption,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    body: {
+      marginTop: spacing[1],
+    },
+  });

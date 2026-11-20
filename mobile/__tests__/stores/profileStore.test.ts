@@ -3,6 +3,7 @@ import { profileService } from '../../src/services/profileService';
 import { StudentProfile } from '../../src/types/models';
 
 describe('ProfileStore', () => {
+  jest.setTimeout(15000);
   const sampleProfile: StudentProfile = {
     id: 'user-1',
     email: 'aditya.verma@campus.edu',

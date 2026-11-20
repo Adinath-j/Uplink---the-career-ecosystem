@@ -17,8 +17,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../types/navigation';
 import { AppHeader } from '../../components/common/AppHeader';
 import { Icon } from '../../components/common/Icon';
-import { colors, typography, spacing, radii } from '../../theme';
+import { typography, spacing, radii } from '../../theme';
+import { useTheme, useThemedStyles } from '../../theme/ThemeContext';
+import { ColorPalette } from '../../theme/colors';
 import { useAiStore, AiChatMessage } from '../../store/aiStore';
+import { validateAiPrompt } from '../../utils/validation';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -30,6 +33,8 @@ const PROMPT_SUGGESTIONS = [
 ];
 
 export const AIChatScreen: React.FC = () => {
+  const { colors, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NavigationProp>();
   const insets = useSafeAreaInsets();
   const { messages, isThinking, sendPrompt, clearChat } = useAiStore();
@@ -38,7 +43,8 @@ export const AIChatScreen: React.FC = () => {
 
   const handleSend = async (textToSend?: string, type?: string) => {
     const text = (textToSend || inputText).trim();
-    if (!text || isThinking) return;
+    const promptErr = validateAiPrompt(text);
+    if (promptErr || isThinking) return;
 
     setInputText('');
     await sendPrompt(text, type || selectedTopic);
@@ -179,7 +185,7 @@ export const AIChatScreen: React.FC = () => {
         <TextInput
           style={styles.textInput}
           placeholder="Ask career advice, interview prep, resume..."
-          placeholderTextColor={colors.textSecondary}
+          placeholderTextColor={colors.textMuted}
           value={inputText}
           onChangeText={setInputText}
           multiline
@@ -205,183 +211,184 @@ export const AIChatScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-  },
-  headerIconButton: {
-    padding: spacing[1],
-  },
-  suggestionsContainer: {
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingVertical: spacing[2],
-  },
-  suggestionsContent: {
-    paddingHorizontal: spacing[4],
-    gap: spacing[2],
-  },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radii.full,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  chipActive: {
-    backgroundColor: '#EFF6FF',
-    borderColor: colors.primary,
-  },
-  chipText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  chipTextActive: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  chatListContent: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-  },
-  messageRow: {
-    flexDirection: 'row',
-    marginVertical: spacing[1],
-    alignItems: 'flex-end',
-  },
-  userMessageRow: {
-    justifyContent: 'flex-end',
-  },
-  assistantMessageRow: {
-    justifyContent: 'flex-start',
-  },
-  aiAvatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing[2],
-    marginBottom: spacing[1],
-  },
-  aiAvatarSmall: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: spacing[2],
-  },
-  bubble: {
-    maxWidth: '82%',
-    borderRadius: radii.lg,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  userBubble: {
-    backgroundColor: colors.primary,
-    borderBottomRightRadius: 2,
-  },
-  assistantBubble: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderBottomLeftRadius: 2,
-  },
-  senderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-    paddingBottom: 2,
-  },
-  assistantSenderTitle: {
-    ...typography.label,
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  timestampText: {
-    ...typography.caption,
-    fontSize: 10,
-    color: colors.textSecondary,
-    marginLeft: spacing[2],
-  },
-  userTimestampText: {
-    ...typography.caption,
-    fontSize: 10,
-    color: '#E0E7FF',
-    alignSelf: 'flex-end',
-    marginTop: 4,
-  },
-  messageText: {
-    ...typography.body,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  userText: {
-    color: '#FFFFFF',
-  },
-  assistantText: {
-    color: colors.text,
-  },
-  thinkingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: spacing[2],
-    paddingHorizontal: spacing[2],
-  },
-  thinkingText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginLeft: spacing[2],
-    fontStyle: 'italic',
-  },
-  inputArea: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    gap: spacing[2],
-  },
-  textInput: {
-    flex: 1,
-    maxHeight: 100,
-    minHeight: 42,
-    backgroundColor: '#F9FAFB',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    color: colors.text,
-    fontSize: 14,
-  },
-  sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sendButtonDisabled: {
-    backgroundColor: '#9CA3AF',
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    headerActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[2],
+    },
+    headerIconButton: {
+      padding: spacing[1],
+    },
+    suggestionsContainer: {
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      paddingVertical: spacing[2],
+    },
+    suggestionsContent: {
+      paddingHorizontal: spacing[4],
+      gap: spacing[2],
+    },
+    chip: {
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: radii.full,
+      backgroundColor: colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    chipActive: {
+      backgroundColor: colors.primarySoft,
+      borderColor: colors.primary,
+    },
+    chipText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    chipTextActive: {
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    chatListContent: {
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+    },
+    messageRow: {
+      flexDirection: 'row',
+      marginVertical: spacing[1],
+      alignItems: 'flex-end',
+    },
+    userMessageRow: {
+      justifyContent: 'flex-end',
+    },
+    assistantMessageRow: {
+      justifyContent: 'flex-start',
+    },
+    aiAvatar: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: spacing[2],
+      marginBottom: spacing[1],
+    },
+    aiAvatarSmall: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: spacing[2],
+    },
+    bubble: {
+      maxWidth: '82%',
+      borderRadius: radii.lg,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+    },
+    userBubble: {
+      backgroundColor: colors.primary,
+      borderBottomRightRadius: 2,
+    },
+    assistantBubble: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderBottomLeftRadius: 2,
+    },
+    senderHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 4,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+      paddingBottom: 2,
+    },
+    assistantSenderTitle: {
+      ...typography.label,
+      fontSize: 12,
+      color: colors.primary,
+      fontWeight: '700',
+    },
+    timestampText: {
+      ...typography.caption,
+      fontSize: 10,
+      color: colors.textSecondary,
+      marginLeft: spacing[2],
+    },
+    userTimestampText: {
+      ...typography.caption,
+      fontSize: 10,
+      color: '#E0E7FF',
+      alignSelf: 'flex-end',
+      marginTop: 4,
+    },
+    messageText: {
+      ...typography.body,
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    userText: {
+      color: '#FFFFFF',
+    },
+    assistantText: {
+      color: colors.textPrimary,
+    },
+    thinkingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: spacing[2],
+      paddingHorizontal: spacing[2],
+    },
+    thinkingText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginLeft: spacing[2],
+      fontStyle: 'italic',
+    },
+    inputArea: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      backgroundColor: colors.surface,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      gap: spacing[2],
+    },
+    textInput: {
+      flex: 1,
+      maxHeight: 100,
+      minHeight: 42,
+      backgroundColor: colors.inputBg,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+      color: colors.textPrimary,
+      fontSize: 14,
+    },
+    sendButton: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    sendButtonDisabled: {
+      opacity: 0.5,
+    },
+  });

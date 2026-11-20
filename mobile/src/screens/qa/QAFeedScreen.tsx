@@ -12,7 +12,7 @@ import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MainTabParamList, RootStackParamList } from '../../types/navigation';
 import { QAFeedTab, QATopic } from '../../types/models';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useThemedStyles, ColorPalette } from '../../theme';
 import { AppHeader } from '../../components/common/AppHeader';
 import { SearchField } from '../../components/common/SearchField';
 import { FilterChips } from '../../components/common/FilterChips';
@@ -49,6 +49,7 @@ const TOPICS: (QATopic | 'All')[] = [
 ];
 
 export const QAFeedScreen: React.FC<Props> = ({ navigation }) => {
+  const { styles, colors } = useThemedStyles(createStyles);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const {
@@ -76,10 +77,6 @@ export const QAFeedScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* 
-        Q&A Header:
-        Title: Q&A on the same row as header actions
-      */}
       <AppHeader
         title="Q&A"
         onBookmarkPress={() => navigation.navigate('SavedOpportunities')}
@@ -181,67 +178,69 @@ export const QAFeedScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  searchSection: {
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[3],
-    paddingBottom: spacing[1],
-  },
-  feedTabsRow: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    paddingHorizontal: spacing[4],
-  },
-  feedTab: {
-    paddingVertical: spacing[3],
-    marginRight: spacing[4],
-    borderBottomWidth: 2,
-    borderBottomColor: 'transparent',
-  },
-  feedTabActive: {
-    borderBottomColor: colors.primary,
-  },
-  feedTabText: {
-    ...typography.label,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  feedTabTextActive: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  topicsRow: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  listContent: {
-    paddingBottom: spacing[12] + 40,
-  },
-  floatingBtn: {
-    position: 'absolute',
-    bottom: spacing[5],
-    right: spacing[4],
-    backgroundColor: colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
-    borderRadius: radii.full,
-    elevation: 3,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    gap: 6,
-  },
-  floatingBtnText: {
-    ...typography.button,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    searchSection: {
+      paddingHorizontal: spacing[4],
+      paddingTop: spacing[3],
+      paddingBottom: spacing[1],
+    },
+    feedTabsRow: {
+      flexDirection: 'row',
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      paddingHorizontal: spacing[4],
+      backgroundColor: colors.surface,
+    },
+    feedTab: {
+      paddingVertical: spacing[3],
+      marginRight: spacing[4],
+      borderBottomWidth: 2,
+      borderBottomColor: 'transparent',
+    },
+    feedTabActive: {
+      borderBottomColor: colors.primary,
+    },
+    feedTabText: {
+      ...typography.label,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    feedTabTextActive: {
+      color: colors.primary,
+      fontWeight: '700',
+    },
+    topicsRow: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    listContent: {
+      paddingBottom: spacing[12] + 40,
+    },
+    floatingBtn: {
+      position: 'absolute',
+      bottom: spacing[5],
+      right: spacing[4],
+      backgroundColor: colors.primary,
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: spacing[3],
+      paddingHorizontal: spacing[4],
+      borderRadius: radii.full,
+      elevation: 4,
+      shadowColor: '#000000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 4,
+      gap: 6,
+    },
+    floatingBtnText: {
+      ...typography.button,
+      color: '#FFFFFF',
+      fontWeight: '600',
+    },
+  });

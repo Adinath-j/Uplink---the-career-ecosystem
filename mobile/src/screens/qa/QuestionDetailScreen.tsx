@@ -14,7 +14,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../types/navigation';
 import { Question } from '../../types/models';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useThemedStyles, ColorPalette } from '../../theme';
 import { AppHeader } from '../../components/common/AppHeader';
 import { SameDoubtButton } from '../../components/qa/SameDoubtButton';
 import { Icon } from '../../components/common/Icon';
@@ -23,12 +23,14 @@ import { ErrorState } from '../../components/common/ErrorState';
 import { qaService } from '../../services/qaService';
 import { useQAStore } from '../../store/qaStore';
 import { useAuthStore } from '../../store/authStore';
+import { validateAnswerContent } from '../../utils/validation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'QuestionDetail'>;
 
 export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => {
   const { questionId } = route.params;
   const insets = useSafeAreaInsets();
+  const { styles, colors } = useThemedStyles(createStyles);
   const [question, setQuestion] = useState<Question | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,7 +72,11 @@ export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
   const answers = activeQuestionAnswers[questionId] || [];
 
   const handlePostAnswer = async () => {
-    if (!answerText.trim()) return;
+    const err = validateAnswerContent(answerText);
+    if (err) {
+      Alert.alert('Validation Error', err);
+      return;
+    }
 
     setIsSubmitting(true);
     const success = await postAnswer(questionId, answerText.trim());
@@ -78,7 +84,6 @@ export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
 
     if (success) {
       setAnswerText('');
-      // update local question count
       if (question) {
         setQuestion({
           ...question,
@@ -107,8 +112,8 @@ export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <AppHeader title="Question" onBackPress={() => navigation.goBack()} />
-        <LoadingState message="Loading question and answers..." />
+        <AppHeader title="Discussion" onBackPress={() => navigation.goBack()} />
+        <LoadingState message="Loading question and verified answers..." />
       </View>
     );
   }
@@ -116,8 +121,11 @@ export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
   if (error || !question) {
     return (
       <View style={styles.container}>
-        <AppHeader title="Question" onBackPress={() => navigation.goBack()} />
-        <ErrorState message={error || 'Question not found'} onRetry={() => navigation.goBack()} />
+        <AppHeader title="Discussion" onBackPress={() => navigation.goBack()} />
+        <ErrorState
+          message={error || 'Question not found'}
+          onRetry={() => navigation.goBack()}
+        />
       </View>
     );
   }
@@ -125,32 +133,23 @@ export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior="padding"
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
     >
       <AppHeader
-        title="Question Details"
+        title="Discussion"
         onBackPress={() => navigation.goBack()}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Question Header & Body */}
-        <View style={styles.questionSection}>
-          <TouchableOpacity
-            style={styles.authorRow}
-            onPress={() => {
-              if (question.authorId) {
-                navigation.navigate('PublicProfile', {
-                  userId: question.authorId,
-                  fullName: question.authorName,
-                });
-              }
-            }}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.authorName}>{question.authorName}</Text>
-            <Text style={styles.authorContext}>• {question.authorAcademicContext}</Text>
-          </TouchableOpacity>
+        {/* Main Question Card */}
+        <View style={styles.questionCard}>
+          <View style={styles.authorRow}>
+            <View>
+              <Text style={styles.authorName}>{question.authorName}</Text>
+              <Text style={styles.authorContext}>{question.authorAcademicContext}</Text>
+            </View>
+          </View>
 
           <Text style={styles.questionTitle}>{question.title}</Text>
           <Text style={styles.questionDesc}>{question.description}</Text>
@@ -163,67 +162,61 @@ export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
             ))}
           </View>
 
-          <View style={styles.actionRow}>
+          <View style={styles.metaRow}>
             <SameDoubtButton
               count={question.sameDoubtCount}
               hasUserMarked={question.hasUserMarkedSameDoubt}
               onPress={handleToggleDoubt}
             />
-            <Text style={styles.answerCountBadge}>
-              {question.answerCount} {question.answerCount === 1 ? 'Answer' : 'Answers'}
+            <Text style={styles.answersLabel}>
+              {answers.length} {answers.length === 1 ? 'Answer' : 'Answers'}
             </Text>
           </View>
         </View>
 
-        <View style={styles.divider} />
-
-        {/* Answers List */}
+        {/* Answers Section Header */}
         <View style={styles.answersSection}>
-          <Text style={styles.answersHeader}>Answers ({answers.length})</Text>
+          <Text style={styles.sectionTitle}>Peer & Mentor Answers</Text>
 
-          {isLoadingAnswers ? (
-            <LoadingState message="Loading responses..." />
+          {isLoadingAnswers && answers.length === 0 ? (
+            <LoadingState message="Fetching answers..." />
           ) : answers.length === 0 ? (
-            <View style={styles.noAnswersBox}>
-              <Text style={styles.noAnswersTitle}>No answers yet</Text>
-              <Text style={styles.noAnswersText}>
-                Be the first to provide technical insight or a structured solution.
+            <View style={styles.emptyAnswers}>
+              <Text style={styles.emptyAnswersText}>
+                No answers posted yet. Share your experience or code solution below.
               </Text>
             </View>
           ) : (
             answers.map((ans) => (
-              <View key={ans.id} style={styles.answerItem}>
+              <View
+                key={ans.id}
+                style={[
+                  styles.answerCard,
+                  ans.isAccepted && styles.acceptedAnswerCard,
+                ]}
+              >
                 <View style={styles.ansHeader}>
-                  <TouchableOpacity
-                    style={styles.ansAuthorCol}
-                    onPress={() => {
-                      if (ans.authorId) {
-                        navigation.navigate('PublicProfile', {
-                          userId: ans.authorId,
-                          fullName: ans.authorName,
-                        });
-                      }
-                    }}
-                    activeOpacity={0.7}
-                  >
+                  <View style={styles.ansAuthorCol}>
                     <Text style={styles.ansAuthorName}>{ans.authorName}</Text>
-                    <Text style={styles.ansAuthorRole}>{ans.authorRole}</Text>
-                  </TouchableOpacity>
+                    <Text style={styles.ansAuthorRole}>
+                      {ans.authorRole}
+                    </Text>
+                  </View>
 
                   {ans.isAccepted ? (
                     <View style={styles.acceptedBadge}>
-                      <Icon name="check-circle" size={13} color={colors.success} />
+                      <Icon name="check-circle" size={14} color={colors.success} />
                       <Text style={styles.acceptedText}>Accepted Solution</Text>
                     </View>
                   ) : isQuestionAuthor ? (
                     <TouchableOpacity
-                      onPress={() => acceptAnswer(question.id, ans.id)}
+                      onPress={() => acceptAnswer(questionId, ans.id)}
                       style={styles.acceptButton}
                       accessibilityRole="button"
-                      accessibilityLabel="Mark this answer as accepted solution"
+                      accessibilityLabel="Mark answer as accepted"
                     >
                       <Icon name="check" size={12} color={colors.primary} />
-                      <Text style={styles.acceptButtonText}>Accept</Text>
+                      <Text style={styles.acceptButtonText}>Accept Answer</Text>
                     </TouchableOpacity>
                   ) : null}
                 </View>
@@ -232,17 +225,17 @@ export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
 
                 <View style={styles.ansFooter}>
                   <TouchableOpacity
-                    onPress={() => toggleHelpfulAnswer(question.id, ans.id)}
+                    onPress={() => toggleHelpfulAnswer(questionId, ans.id)}
                     style={[
                       styles.helpfulBtn,
                       ans.hasUserMarkedHelpful && styles.helpfulBtnActive,
                     ]}
                     accessibilityRole="button"
-                    accessibilityLabel="Mark answer as helpful"
+                    accessibilityLabel="Vote answer as helpful"
                   >
                     <Icon
                       name="thumbs-up"
-                      size={13}
+                      size={14}
                       color={ans.hasUserMarkedHelpful ? colors.primary : colors.textSecondary}
                     />
                     <Text
@@ -251,7 +244,7 @@ export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
                         ans.hasUserMarkedHelpful && styles.helpfulTextActive,
                       ]}
                     >
-                      Helpful {ans.helpfulCount > 0 ? `(${ans.helpfulCount})` : ''}
+                      Helpful ({ans.helpfulCount})
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -261,18 +254,18 @@ export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
         </View>
       </ScrollView>
 
-      {/* Answer Composer Footer */}
+      {/* Sticky Answer Composer Bar */}
       <View
         style={[
           styles.composerBar,
-          { paddingBottom: Math.max(insets.bottom, spacing[3]) },
+          { paddingBottom: Math.max(insets.bottom, spacing[2]) },
         ]}
       >
         <TextInput
           value={answerText}
           onChangeText={setAnswerText}
-          placeholder="Write your answer..."
-          placeholderTextColor={colors.textMuted}
+          placeholder="Write your answer or explanation..."
+          placeholderTextColor={colors.placeholder}
           multiline
           style={styles.composerInput}
         />
@@ -284,237 +277,240 @@ export const QuestionDetailScreen: React.FC<Props> = ({ route, navigation }) => 
             (!answerText.trim() || isSubmitting) && styles.sendBtnDisabled,
           ]}
           accessibilityRole="button"
-          accessibilityLabel="Post Answer"
+          accessibilityLabel="Post answer"
         >
-          <Text style={styles.sendBtnText}>Post</Text>
+          <Text style={styles.sendBtnText}>{isSubmitting ? '...' : 'Post'}</Text>
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    paddingBottom: spacing[4],
-  },
-  questionSection: {
-    padding: spacing[4],
-  },
-  authorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: spacing[1],
-  },
-  authorName: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  authorContext: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  questionTitle: {
-    ...typography.screenTitle,
-    fontSize: 18,
-    marginBottom: spacing[2],
-    lineHeight: 24,
-  },
-  questionDesc: {
-    ...typography.body,
-    color: colors.text,
-    lineHeight: 22,
-    marginBottom: spacing[3],
-  },
-  topicsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: spacing[3],
-  },
-  topicBadge: {
-    backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  topicText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  answerCountBadge: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  divider: {
-    height: 8,
-    backgroundColor: colors.surfaceMuted,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: colors.border,
-  },
-  answersSection: {
-    padding: spacing[4],
-  },
-  answersHeader: {
-    ...typography.sectionTitle,
-    marginBottom: spacing[3],
-  },
-  noAnswersBox: {
-    padding: spacing[6],
-    alignItems: 'center',
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  noAnswersTitle: {
-    ...typography.cardTitle,
-    marginBottom: 4,
-  },
-  noAnswersText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  answerItem: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    padding: spacing[3],
-    marginBottom: spacing[3],
-  },
-  ansHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing[2],
-  },
-  ansAuthorCol: {
-    flex: 1,
-  },
-  ansAuthorName: {
-    ...typography.label,
-    color: colors.text,
-  },
-  ansAuthorRole: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  acceptedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: colors.successSoft,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radii.sm,
-  },
-  acceptedText: {
-    ...typography.caption,
-    color: colors.success,
-    fontWeight: '600',
-    fontSize: 10,
-  },
-  acceptButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: colors.primary,
-    backgroundColor: colors.surface,
-  },
-  acceptButtonText: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '600',
-    fontSize: 10,
-  },
-  ansContent: {
-    ...typography.body,
-    color: colors.text,
-    lineHeight: 20,
-    marginBottom: spacing[2],
-  },
-  ansFooter: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-  },
-  helpfulBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: radii.sm,
-    backgroundColor: colors.surfaceMuted,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  helpfulBtnActive: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primary,
-  },
-  helpfulText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  helpfulTextActive: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  composerBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing[3],
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.surface,
-    gap: spacing[2],
-  },
-  composerInput: {
-    flex: 1,
-    ...typography.body,
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    maxHeight: 90,
-    color: colors.text,
-  },
-  sendBtn: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    borderRadius: radii.md,
-    justifyContent: 'center',
-    height: 40,
-  },
-  sendBtnDisabled: {
-    opacity: 0.5,
-  },
-  sendBtnText: {
-    ...typography.button,
-    color: '#FFFFFF',
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      paddingBottom: spacing[4],
+    },
+    questionCard: {
+      backgroundColor: colors.surface,
+      padding: spacing[4],
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    authorRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: spacing[2],
+    },
+    authorName: {
+      ...typography.label,
+      color: colors.text,
+      fontSize: 14,
+    },
+    authorContext: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    questionTitle: {
+      ...typography.screenTitle,
+      color: colors.text,
+      fontSize: 18,
+      marginBottom: spacing[2],
+      lineHeight: 24,
+    },
+    questionDesc: {
+      ...typography.body,
+      color: colors.text,
+      lineHeight: 22,
+      marginBottom: spacing[3],
+    },
+    topicsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginBottom: spacing[3],
+    },
+    topicBadge: {
+      backgroundColor: colors.surfaceMuted,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: radii.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    topicText: {
+      ...typography.caption,
+      fontSize: 11,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    metaRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingTop: spacing[2],
+      borderTopWidth: 1,
+      borderTopColor: colors.borderLight,
+    },
+    answersLabel: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      fontWeight: '600',
+    },
+    answersSection: {
+      padding: spacing[4],
+    },
+    sectionTitle: {
+      ...typography.sectionTitle,
+      color: colors.text,
+      fontSize: 15,
+      marginBottom: spacing[3],
+    },
+    emptyAnswers: {
+      backgroundColor: colors.surfaceMuted,
+      padding: spacing[4],
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+    },
+    emptyAnswersText: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    answerCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing[3],
+      marginBottom: spacing[3],
+    },
+    acceptedAnswerCard: {
+      borderColor: colors.success,
+      backgroundColor: colors.surfaceElevated,
+    },
+    ansHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: spacing[2],
+    },
+    ansAuthorCol: {
+      flex: 1,
+    },
+    ansAuthorName: {
+      ...typography.label,
+      color: colors.text,
+    },
+    ansAuthorRole: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    acceptedBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 3,
+      backgroundColor: colors.successSoft,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: radii.sm,
+    },
+    acceptedText: {
+      ...typography.caption,
+      color: colors.success,
+      fontWeight: '600',
+      fontSize: 10,
+    },
+    acceptButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: radii.sm,
+      borderWidth: 1,
+      borderColor: colors.primary,
+      backgroundColor: colors.surface,
+    },
+    acceptButtonText: {
+      ...typography.caption,
+      color: colors.primary,
+      fontWeight: '600',
+      fontSize: 10,
+    },
+    ansContent: {
+      ...typography.body,
+      color: colors.text,
+      lineHeight: 20,
+      marginBottom: spacing[2],
+    },
+    ansFooter: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+    },
+    helpfulBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surfaceMuted,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    helpfulBtnActive: {
+      backgroundColor: colors.primarySoft,
+      borderColor: colors.primary,
+    },
+    helpfulText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    helpfulTextActive: {
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    composerBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: spacing[3],
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.surface,
+      gap: spacing[2],
+    },
+    composerInput: {
+      flex: 1,
+      ...typography.body,
+      backgroundColor: colors.inputBg,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+      maxHeight: 90,
+      color: colors.text,
+    },
+    sendBtn: {
+      backgroundColor: colors.primary,
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[2],
+      borderRadius: radii.md,
+      justifyContent: 'center',
+      height: 40,
+    },
+    sendBtnDisabled: {
+      opacity: 0.5,
+    },
+    sendBtnText: {
+      ...typography.button,
+      color: '#FFFFFF',
+    },
+  });

@@ -7,7 +7,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useTheme } from '../../theme';
 import { Icon, IconName } from './Icon';
 
 interface SecondaryButtonProps {
@@ -31,6 +31,7 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
   labelStyle,
   size = 'md',
 }) => {
+  const { colors } = useTheme();
   const isDisabled = disabled || isLoading;
 
   const sizeStyle =
@@ -49,6 +50,10 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
       accessibilityLabel={label}
       style={[
         styles.button,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.border,
+        },
         sizeStyle,
         isDisabled && styles.disabled,
         style,
@@ -66,7 +71,7 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
               style={styles.icon}
             />
           )}
-          <Text style={[styles.label, labelStyle]}>{label}</Text>
+          <Text style={[styles.label, { color: colors.text }, labelStyle]}>{label}</Text>
         </>
       )}
     </TouchableOpacity>
@@ -75,9 +80,7 @@ export const SecondaryButton: React.FC<SecondaryButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radii.md,
     flexDirection: 'row',
     alignItems: 'center',
@@ -99,12 +102,11 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.button,
-    color: colors.text,
-  },
-  disabled: {
-    opacity: 0.5,
   },
   icon: {
     marginRight: spacing[2],
+  },
+  disabled: {
+    opacity: 0.5,
   },
 });

@@ -46,7 +46,8 @@ interface MessagingState {
 
 let userMsgUnsub: (() => void) | null = null;
 let userNotifUnsub: (() => void) | null = null;
-let socketInitialized = false;
+let currentSubscribedUserId: string | null = null;
+let isSocketStateListenerAttached = false;
 const typingTimers: Record<string, ReturnType<typeof setTimeout>> = {};
 
 export const useMessagingStore = create<MessagingState>((set, get) => ({
@@ -63,90 +64,128 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   typingUsers: {},
 
   initSocket: async () => {
-    if (socketInitialized) return;
-    socketInitialized = true;
-
-    // Listen to socket connection state changes
-    websocketService.onStateChange((state) => {
-      set({
-        connectionState: state,
-        isConnectedToSocket: state === 'CONNECTED',
+    // Attach connection state listener once
+    if (!isSocketStateListenerAttached) {
+      isSocketStateListenerAttached = true;
+      websocketService.onStateChange((state) => {
+        set({
+          connectionState: state,
+          isConnectedToSocket: state === 'CONNECTED',
+        });
       });
-    });
+    }
 
+    // Ensure connection is established or recovering
     await websocketService.connect();
 
-    // Subscribe to current user's personal alert and inbox channels
+    // Subscribe to current authenticated user's personal inbox & alerts
     const currentUser = useAuthStore.getState().user;
     if (currentUser?.id) {
-      if (userMsgUnsub) userMsgUnsub();
-      if (userNotifUnsub) userNotifUnsub();
+      // Re-subscribe if user switched or subscription not yet active
+      if (currentSubscribedUserId !== currentUser.id || !userMsgUnsub) {
+        if (userMsgUnsub) userMsgUnsub();
+        if (userNotifUnsub) userNotifUnsub();
 
-      // Listen for incoming messages destined for this user (inbox sync + alerts)
-      userMsgUnsub = websocketService.subscribe(
-        `/topic/user.${currentUser.id}.messages`,
-        (incoming: BackendMessage) => {
-          if (!incoming || !incoming.id) return;
+        currentSubscribedUserId = currentUser.id;
 
-          const currentActiveConv = get().activeConversationId;
-          const isCurrentActive =
-            currentActiveConv && incoming.conversationId === currentActiveConv;
+        // Listen for incoming messages destined for this user (inbox sync + alerts)
+        userMsgUnsub = websocketService.subscribe(
+          `/topic/user.${currentUser.id}.messages`,
+          (incoming: BackendMessage) => {
+            if (!incoming || !incoming.id || !incoming.conversationId) return;
 
-          if (isCurrentActive) {
-            get().receiveIncomingMessage(incoming);
-          } else {
-            // Outside of active chat: trigger in-app alert toast
-            const isFromOther =
-              incoming.sender?.id !== currentUser.id &&
-              incoming.sender?.email !== currentUser.email;
+            const conversationId = incoming.conversationId;
+            const currentActiveConv = get().activeConversationId;
+            const isCurrentActive =
+              currentActiveConv && conversationId === currentActiveConv;
 
-            if (isFromOther) {
-              useAlertStore.getState().showAlert({
-                type: 'MESSAGE',
-                title: incoming.sender?.fullName || 'Direct Message',
-                subtitle: incoming.content || 'Sent you a message',
-                data: {
-                  conversationId: incoming.conversationId,
-                  senderName: incoming.sender?.fullName,
-                },
-              });
-            }
+            if (isCurrentActive) {
+              get().receiveIncomingMessage(incoming);
+            } else {
+              // Outside of active chat: trigger in-app alert toast
+              const isFromOther =
+                incoming.sender?.id !== currentUser.id &&
+                incoming.sender?.email !== currentUser.email;
 
-            // Update conversations list: bump to top, update lastMessage, increment unreadCount
-            set((state) => {
-              const updated = [...state.conversations];
-              const idx = updated.findIndex((c) => c.id === incoming.conversationId);
-              if (idx !== -1) {
-                const [target] = updated.splice(idx, 1);
-                target.updatedAt = incoming.createdAt || new Date().toISOString();
-                target.lastMessage = incoming;
-                if (isFromOther) {
-                  target.unreadCount = (target.unreadCount || 0) + 1;
-                }
-                updated.unshift(target);
-              } else {
-                // Fetch list if conversation is brand new to user
-                get().fetchConversations();
+              if (isFromOther) {
+                useAlertStore.getState().showAlert({
+                  type: 'MESSAGE',
+                  title: incoming.sender?.fullName || 'Direct Message',
+                  subtitle: incoming.content || 'Sent you a message',
+                  data: {
+                    conversationId: conversationId,
+                    senderName: incoming.sender?.fullName,
+                  },
+                });
               }
-              return { conversations: updated };
+
+              // Update conversations list: bump to top, update lastMessage, increment unreadCount
+              set((state) => {
+                const updated = [...state.conversations];
+                const idx = updated.findIndex((c) => c.id === conversationId);
+                if (idx !== -1) {
+                  const [target] = updated.splice(idx, 1);
+                  target.updatedAt = incoming.createdAt || new Date().toISOString();
+                  target.lastMessage = incoming;
+                  if (isFromOther) {
+                    target.unreadCount = (target.unreadCount || 0) + 1;
+                  }
+                  updated.unshift(target);
+                } else {
+                  // Synthesize brand-new conversation directly so inbox renders immediately
+                  const newConv: BackendConversation = {
+                    id: conversationId,
+                    type: 'DIRECT',
+                    createdAt: incoming.createdAt || new Date().toISOString(),
+                    updatedAt: incoming.createdAt || new Date().toISOString(),
+                    unreadCount: isFromOther ? 1 : 0,
+                    lastMessage: incoming,
+                    members: [
+                      {
+                        id: `m-${incoming.sender.id}`,
+                        user: {
+                          id: incoming.sender.id,
+                          fullName: incoming.sender.fullName,
+                          email: incoming.sender.email,
+                        },
+                        role: 'MEMBER',
+                      },
+                      {
+                        id: `m-${currentUser.id}`,
+                        user: {
+                          id: currentUser.id,
+                          fullName: currentUser.fullName,
+                          email: currentUser.email,
+                        },
+                        role: 'MEMBER',
+                      },
+                    ],
+                  };
+                  updated.unshift(newConv);
+                }
+                saveScopedCache('conversations', updated);
+                return { conversations: updated };
+              });
+
+              // Also trigger silent background fetch to sync full server metadata
+              get().fetchConversations();
+            }
+          }
+        );
+
+        // Listen for real-time notifications (e.g. system, job, assessment alerts)
+        userNotifUnsub = websocketService.subscribe(
+          `/topic/user.${currentUser.id}.notifications`,
+          (notif: any) => {
+            if (!notif) return;
+            useAlertStore.getState().showAlert({
+              type: notif.type || 'SYSTEM',
+              title: notif.title || 'Notification',
+              subtitle: notif.message || '',
             });
           }
-        }
-      );
-
-      // Listen for real-time notifications (e.g. system, job, assessment alerts)
-      userNotifUnsub = websocketService.subscribe(
-        `/topic/user.${currentUser.id}.notifications`,
-        (notif: any) => {
-          if (!notif) return;
-          useAlertStore.getState().showAlert({
-            type: 'NOTIFICATION',
-            title: notif.title || 'Notification',
-            subtitle: notif.message || '',
-            data: notif,
-          });
-        }
-      );
+        );
+      }
     }
   },
 
@@ -265,35 +304,80 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     if (!message || !message.id) return;
 
     set((state) => {
-      // Optimistic deduplication:
-      // Check if message was already added optimistically via clientMessageId or matching id
-      const existingIndex = state.activeMessages.findIndex(
-        (m) =>
-          (message.clientMessageId && m.clientMessageId === message.clientMessageId) ||
-          m.id === message.id ||
-          (message.clientMessageId && m.id === message.clientMessageId)
-      );
-
       let updatedMessages = [...state.activeMessages];
-      if (existingIndex !== -1) {
-        // Replace temporary optimistic message with confirmed server message
-        updatedMessages[existingIndex] = {
-          ...message,
-          status: 'SENT',
-        };
-      } else {
-        // Prepend to top because FlatList is inverted
-        updatedMessages = [{ ...message, status: 'SENT' }, ...updatedMessages];
+      // Only modify activeMessages if this message belongs to the currently active conversation
+      if (state.activeConversationId === message.conversationId) {
+        // Optimistic deduplication:
+        // Check if message was already added optimistically via clientMessageId or matching id
+        const existingIndex = state.activeMessages.findIndex(
+          (m) =>
+            (message.clientMessageId && m.clientMessageId === message.clientMessageId) ||
+            m.id === message.id ||
+            (message.clientMessageId && m.id === message.clientMessageId)
+        );
+
+        if (existingIndex !== -1) {
+          // Replace temporary optimistic message with confirmed server message
+          updatedMessages[existingIndex] = {
+            ...message,
+            status: 'SENT',
+          };
+        } else {
+          // Prepend to top because FlatList is inverted (index 0 is bottom)
+          updatedMessages = [{ ...message, status: 'SENT' }, ...updatedMessages];
+        }
       }
 
       // Also update conversations list preview
       const updatedConversations = [...state.conversations];
-      const convIdx = updatedConversations.findIndex((c) => c.id === message.conversationId);
+      const convId = message.conversationId || '';
+      const convIdx = convId
+        ? updatedConversations.findIndex((c) => c.id === convId)
+        : -1;
+
       if (convIdx !== -1) {
         const [target] = updatedConversations.splice(convIdx, 1);
         target.lastMessage = message;
         target.updatedAt = message.createdAt || new Date().toISOString();
+        if (state.activeConversationId !== convId) {
+          target.unreadCount = (target.unreadCount || 0) + 1;
+        }
         updatedConversations.unshift(target);
+      } else if (convId) {
+        const currentUser = useAuthStore.getState().user;
+        const newConv: BackendConversation = {
+          id: convId,
+          type: 'DIRECT',
+          createdAt: message.createdAt || new Date().toISOString(),
+          updatedAt: message.createdAt || new Date().toISOString(),
+          unreadCount: state.activeConversationId !== convId ? 1 : 0,
+          lastMessage: message,
+          members: [
+            {
+              id: `m-${message.sender.id}`,
+              user: {
+                id: message.sender.id,
+                fullName: message.sender.fullName,
+                email: message.sender.email,
+              },
+              role: 'MEMBER',
+            },
+            ...(currentUser
+              ? [
+                  {
+                    id: `m-${currentUser.id}`,
+                    user: {
+                      id: currentUser.id,
+                      fullName: currentUser.fullName,
+                      email: currentUser.email,
+                    },
+                    role: 'MEMBER',
+                  },
+                ]
+              : []),
+          ],
+        };
+        updatedConversations.unshift(newConv);
       }
 
       saveScopedCache('conversations', updatedConversations);
@@ -344,7 +428,7 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
     const res = await messagingService.getMessages(conversationId);
     if (res.success && res.data) {
       set({
-        activeMessages: res.data.map((m) => ({ ...m, status: 'SENT' })),
+        activeMessages: [...res.data].reverse().map((m) => ({ ...m, status: 'SENT' })),
         isLoadingMessages: false,
         error: null,
       });

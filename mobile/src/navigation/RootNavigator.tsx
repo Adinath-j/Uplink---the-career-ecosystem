@@ -1,10 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { AppState } from 'react-native';
-import { NavigationContainer, DefaultTheme, createNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme, DarkTheme, createNavigationContainerRef } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import BootSplash from 'react-native-bootsplash';
 import { RootStackParamList } from '../types/navigation';
-import { colors } from '../theme';
+import { useTheme } from '../theme';
 import { ENV } from '../config/env';
 import { storage } from '../services/api/tokenStorage';
 import { prefetchPostAuthData, purgeAllScopedCaches } from '../lib/queryClient';
@@ -20,6 +20,7 @@ import { OnboardingScreen } from '../screens/onboarding/OnboardingScreen';
 import { SignInScreen } from '../screens/auth/SignInScreen';
 import { SignUpScreen } from '../screens/auth/SignUpScreen';
 import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen';
+import { VerifyEmailScreen } from '../screens/auth/VerifyEmailScreen';
 import { BottomTabNavigator } from './BottomTabNavigator';
 import { OpportunityDetailScreen } from '../screens/jobs/OpportunityDetailScreen';
 import { SavedOpportunitiesScreen } from '../screens/jobs/SavedOpportunitiesScreen';
@@ -43,21 +44,25 @@ import { PublicProfileScreen } from '../screens/profile/PublicProfileScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-const AppNavTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    primary: colors.primary,
-    background: colors.background,
-    card: colors.surface,
-    text: colors.text,
-    border: colors.border,
-  },
-};
-
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 export const RootNavigator: React.FC = () => {
+  const { colors, isDark } = useTheme();
+
+  const dynamicNavTheme = useMemo(
+    () => ({
+      ...(isDark ? DarkTheme : DefaultTheme),
+      colors: {
+        ...(isDark ? DarkTheme.colors : DefaultTheme.colors),
+        primary: colors.primary,
+        background: colors.background,
+        card: colors.surface,
+        text: colors.text,
+        border: colors.border,
+      },
+    }),
+    [colors, isDark]
+  );
   useEffect(() => {
     // Reconnect STOMP whenever application transitions into active foreground
     const sub = AppState.addEventListener('change', (nextState) => {
@@ -96,7 +101,7 @@ export const RootNavigator: React.FC = () => {
   };
 
   return (
-    <NavigationContainer ref={navigationRef} theme={AppNavTheme} onReady={handleReady}>
+    <NavigationContainer ref={navigationRef} theme={dynamicNavTheme} onReady={handleReady}>
       <Stack.Navigator
         initialRouteName="Bootstrap"
         screenOptions={{
@@ -109,6 +114,7 @@ export const RootNavigator: React.FC = () => {
         <Stack.Screen name="SignIn" component={SignInScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
         <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
 
         {/* Opportunities Stacks */}

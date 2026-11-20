@@ -11,6 +11,8 @@ export interface ApiResponse<T> {
   data?: T;
   message?: string;
   error?: string;
+  code?: string;
+  raw?: any;
   validationErrors?: Record<string, string>;
   statusCode: number;
 }
@@ -247,6 +249,8 @@ class ApiClient {
       return {
         success: false,
         error: message,
+        code: (responseData as any)?.code,
+        raw: responseData,
         validationErrors: responseData?.validationErrors,
         statusCode: status,
       };
@@ -271,6 +275,19 @@ class ApiClient {
   public async post<T>(endpoint: string, data?: any, config?: AxiosRequestConfig): Promise<ApiResponse<T>> {
     try {
       const response = await this.axiosInstance.post<T>(endpoint, data, config);
+      return this.handleResponse<T>(response);
+    } catch (error) {
+      return this.handleError<T>(error);
+    }
+  }
+
+  public async postFormData<T>(endpoint: string, formData: FormData): Promise<ApiResponse<T>> {
+    try {
+      const response = await this.axiosInstance.post<T>(endpoint, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return this.handleResponse<T>(response);
     } catch (error) {
       return this.handleError<T>(error);

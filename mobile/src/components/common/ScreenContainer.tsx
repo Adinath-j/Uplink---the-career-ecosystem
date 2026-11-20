@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
-import { colors } from '../../theme';
+import { useTheme } from '../../theme';
 
 interface ScreenContainerProps {
   children: React.ReactNode;
@@ -11,12 +11,12 @@ export const ScreenContainer: React.FC<ScreenContainerProps> = ({
   children,
   style,
 }) => {
-  return <View style={[styles.container, style]}>{children}</View>;
+  const { colors } = useTheme();
+  return <View style={[styles.container, { backgroundColor: colors.background }, style]}>{children}</View>;
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
 });

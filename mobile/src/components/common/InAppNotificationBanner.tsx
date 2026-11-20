@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAlertStore } from '../../store/alertStore';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useTheme } from '../../theme';
 import { Icon } from './Icon';
 
 interface InAppNotificationBannerProps {
@@ -21,6 +21,7 @@ export const InAppNotificationBanner: React.FC<InAppNotificationBannerProps> = (
   onNavigateToNotifications,
 }) => {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
   const { activeAlert, dismissAlert } = useAlertStore();
 
   if (!activeAlert) {
@@ -53,7 +54,14 @@ export const InAppNotificationBanner: React.FC<InAppNotificationBannerProps> = (
       pointerEvents="box-none"
     >
       <TouchableOpacity
-        style={styles.bannerCard}
+        style={[
+          styles.bannerCard,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            shadowColor: isDark ? '#000000' : '#0F172A',
+          },
+        ]}
         activeOpacity={0.92}
         onPress={handlePress}
         accessibilityRole="button"
@@ -62,7 +70,11 @@ export const InAppNotificationBanner: React.FC<InAppNotificationBannerProps> = (
         <View
           style={[
             styles.iconWrapper,
-            isMessage ? styles.messageIconWrapper : styles.notificationIconWrapper,
+            {
+              backgroundColor: isMessage
+                ? colors.primarySoft
+                : colors.warningSoft,
+            },
           ]}
         >
           <Icon
@@ -74,14 +86,14 @@ export const InAppNotificationBanner: React.FC<InAppNotificationBannerProps> = (
 
         <View style={styles.textContainer}>
           <View style={styles.headerRow}>
-            <Text style={styles.title} numberOfLines={1}>
+            <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
               {activeAlert.title}
             </Text>
-            <Text style={styles.badgeText}>
+            <Text style={[styles.badgeText, { color: colors.primary }]}>
               {isMessage ? 'Direct Message' : 'Notification'}
             </Text>
           </View>
-          <Text style={styles.subtitle} numberOfLines={2}>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]} numberOfLines={2}>
             {activeAlert.subtitle}
           </Text>
         </View>
@@ -111,13 +123,10 @@ const styles = StyleSheet.create({
   bannerCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
     borderRadius: radii.lg,
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[3],
     borderWidth: 1,
-    borderColor: colors.border,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.15,
     shadowRadius: 10,
@@ -130,12 +139,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing[3],
-  },
-  messageIconWrapper: {
-    backgroundColor: `${colors.primary}15`,
-  },
-  notificationIconWrapper: {
-    backgroundColor: colors.warningSoft,
   },
   textContainer: {
     flex: 1,
@@ -150,20 +153,17 @@ const styles = StyleSheet.create({
   title: {
     ...typography.bodyBold,
     fontSize: 14,
-    color: colors.text,
     flex: 1,
   },
   badgeText: {
     ...typography.caption,
     fontSize: 10,
-    color: colors.primary,
     fontWeight: '600',
     marginLeft: spacing[2],
   },
   subtitle: {
     ...typography.body,
     fontSize: 13,
-    color: colors.textSecondary,
     lineHeight: 18,
   },
   closeButton: {

@@ -11,7 +11,7 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MainTabParamList, RootStackParamList } from '../../types/navigation';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useThemedStyles, ColorPalette } from '../../theme';
 import { AppHeader } from '../../components/common/AppHeader';
 import { SearchField } from '../../components/common/SearchField';
 import { FilterChips } from '../../components/common/FilterChips';
@@ -43,11 +43,12 @@ const HOME_CATEGORIES = [
 ] as const;
 
 export const HomeScreen: React.FC<Props> = ({ navigation }) => {
+  const { styles, colors, isDark } = useThemedStyles(createStyles);
   const [selectedHomeCategory, setSelectedHomeCategory] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // ✅ Granular Zustand selectors to prevent full-screen re-renders
+  // Granular Zustand selectors to prevent full-screen re-renders
   const opportunities = useOpportunityStore((state) => state.opportunities);
   const events = useOpportunityStore((state) => state.events);
   const isLoading = useOpportunityStore((state) => state.isLoading);
@@ -103,94 +104,94 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
     return true;
   });
 
-  const featuredOpportunities = opportunities.filter((o) => o.isVerified).slice(0, 4);
+  const featuredOpportunities = opportunities.slice(0, 5);
 
   return (
     <View style={styles.container}>
+      {/* Top App Header */}
       <AppHeader
-        title="Discover"
+        title="UPLINK"
         onBookmarkPress={() => navigation.navigate('SavedOpportunities')}
         onNotificationPress={() => navigation.navigate('Notifications')}
         onMessagePress={() => navigation.navigate('Conversations')}
         onProfilePress={() => navigation.navigate('MyProfile')}
       />
 
-      {/* ✅ Replaced slow ScrollView with FlatList */}
       <FlatList
         data={filteredOpportunities}
         keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
             onRefresh={onRefresh}
-            colors={[colors.primary]}
             tintColor={colors.primary}
           />
         }
-        // ✅ Performance props for smooth scrolling
-        initialNumToRender={5}
-        maxToRenderPerBatch={5}
-        windowSize={5}
-        removeClippedSubviews={true}
         ListHeaderComponent={
           <>
-            {/* Search entry point */}
+            {/* Search Bar */}
             <View style={styles.searchContainer}>
               <SearchField
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 placeholder="Search opportunities, roles, skills..."
+                onClear={() => setSearchQuery('')}
               />
             </View>
 
-            {/* Quick category filter chips */}
+            {/* AI Career Coach & Resume Studio Spotlight Card */}
+            {!searchQuery && (
+              <View style={styles.aiBanner}>
+                <View style={styles.aiBannerHeader}>
+                  <View style={styles.aiIconBadge}>
+                    <Icon name="sparkles" size={16} color="#FFFFFF" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.aiBannerTitle}>AI Career Coach & Resume Studio</Text>
+                    <Text style={styles.aiBannerSubtitle}>
+                      Live mock interviews, tailored ATS resumes, and career coaching
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.aiBannerButtons}>
+                  <TouchableOpacity
+                    style={styles.aiPrimaryBtn}
+                    onPress={() => navigation.navigate('AIChat')}
+                    activeOpacity={0.8}
+                  >
+                    <Icon name="sparkles" size={14} color="#FFFFFF" />
+                    <Text style={styles.aiPrimaryBtnText}>Open AI Coach</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.aiSecondaryBtn}
+                    onPress={() => navigation.navigate('ResumeBuilder')}
+                    activeOpacity={0.8}
+                  >
+                    <Icon name="file-text" size={14} color={colors.primary} />
+                    <Text style={styles.aiSecondaryBtnText}>Resume Studio</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+
+            {/* Quick Filter Horizontal Scroll */}
             <FilterChips
-              items={[...HOME_CATEGORIES]}
+              items={HOME_CATEGORIES as any}
               selectedId={selectedHomeCategory}
-              onSelect={setSelectedHomeCategory}
+              onSelect={(id) => setSelectedHomeCategory(id)}
             />
 
-            {/* AI Assistant Banner */}
-            <View style={styles.aiBanner}>
-              <View style={styles.aiBannerHeader}>
-                <View style={styles.aiIconBadge}>
-                  <Icon name="sparkles" size={16} color="#FFFFFF" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.aiBannerTitle}>Uplink AI & Resume Studio</Text>
-                  <Text style={styles.aiBannerSubtitle}>
-                    Career advice, interview prep & ATS resume builder
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.aiBannerButtons}>
-                <TouchableOpacity
-                  style={styles.aiPrimaryBtn}
-                  onPress={() => navigation.navigate('AIChat')}
-                  activeOpacity={0.7}
-                >
-                  <Icon name="sparkles" size={14} color="#FFFFFF" />
-                  <Text style={styles.aiPrimaryBtnText}>Ask AI Coach</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.aiSecondaryBtn}
-                  onPress={() => navigation.navigate('ResumeBuilder')}
-                  activeOpacity={0.7}
-                >
-                  <Icon name="file-text" size={14} color={colors.primary} />
-                  <Text style={styles.aiSecondaryBtnText}>Resume Studio</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            {isLoading && !isRefreshing && (
+              <LoadingState message="Loading opportunities & campus feed..." />
+            )}
 
-            {isLoading && !isRefreshing && opportunities.length === 0 ? (
-              <LoadingState message="Loading latest campus activity..." />
-            ) : error && filteredOpportunities.length === 0 ? (
+            {error && !isLoading && (
               <ErrorState message={error} onRetry={fetchOpportunities} />
-            ) : (
+            )}
+
+            {!isLoading && !error && (
               <>
-                {/* Featured Opportunities Section */}
+                {/* Featured / Carousel Section */}
                 {selectedHomeCategory === 'All' && !searchQuery && featuredOpportunities.length > 0 && (
                   <View style={styles.sectionWrapper}>
                     <SectionHeader
@@ -330,7 +331,6 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
                     />
                   )}
                   
-                  {/* Top border for the list to match the original design */}
                   {filteredOpportunities.length > 0 && (
                     <View style={styles.listContainerTopBorder} />
                   )}
@@ -356,194 +356,195 @@ export const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
 export const FeedScreen = HomeScreen;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  searchContainer: {
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[3],
-    paddingBottom: spacing[1],
-  },
-  sectionWrapper: {
-    marginBottom: spacing[2],
-  },
-  horizontalList: {
-    paddingHorizontal: spacing[4],
-    paddingBottom: spacing[2],
-  },
-  eventsContainer: {
-    paddingHorizontal: spacing[4],
-    gap: spacing[2],
-  },
-  eventCard: {
-    backgroundColor: colors.surfaceMuted,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    padding: spacing[3],
-  },
-  eventBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 4,
-  },
-  eventDateText: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  eventTitle: {
-    ...typography.cardTitle,
-    fontSize: 14,
-    color: colors.text,
-    marginBottom: 2,
-  },
-  eventSubtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: 2,
-  },
-  eventTimeText: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  listContainerTopBorder: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  aiBanner: {
-    marginHorizontal: spacing[4],
-    marginTop: spacing[3],
-    marginBottom: spacing[1],
-    backgroundColor: '#F8FAFC',
-    borderRadius: radii.md,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    padding: spacing[3],
-  },
-  aiBannerHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-    marginBottom: spacing[2],
-  },
-  aiIconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  aiBannerTitle: {
-    ...typography.cardTitle,
-    fontSize: 14,
-    color: colors.text,
-  },
-  aiBannerSubtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontSize: 11,
-  },
-  aiBannerButtons: {
-    flexDirection: 'row',
-    gap: spacing[2],
-  },
-  aiPrimaryBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    backgroundColor: colors.primary,
-    borderRadius: radii.sm,
-    paddingVertical: 7,
-  },
-  aiPrimaryBtnText: {
-    ...typography.label,
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  aiSecondaryBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    backgroundColor: '#EFF6FF',
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    paddingVertical: 7,
-  },
-  aiSecondaryBtnText: {
-    ...typography.label,
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  feedContainer: {
-    paddingHorizontal: spacing[4],
-    gap: spacing[2],
-  },
-  postCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    padding: spacing[3],
-    marginBottom: spacing[2],
-  },
-  postHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-    marginBottom: spacing[2],
-  },
-  avatarTouchable: {
-    borderRadius: radii.full,
-  },
-  postAuthorInfo: {
-    flex: 1,
-  },
-  postAuthorName: {
-    ...typography.label,
-    fontSize: 14,
-    color: colors.text,
-    fontWeight: '700',
-  },
-  postTimestamp: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontSize: 11,
-    marginTop: 1,
-  },
-  postContentText: {
-    ...typography.bodySmall,
-    color: colors.text,
-    lineHeight: 18,
-    marginBottom: spacing[2],
-  },
-  postFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[4],
-    paddingTop: spacing[2],
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  postStatItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  postStatText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontSize: 11,
-  },
-});
+const createStyles = (colors: ColorPalette, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    searchContainer: {
+      paddingHorizontal: spacing[4],
+      paddingTop: spacing[3],
+      paddingBottom: spacing[1],
+    },
+    sectionWrapper: {
+      marginBottom: spacing[2],
+    },
+    horizontalList: {
+      paddingHorizontal: spacing[4],
+      paddingBottom: spacing[2],
+    },
+    eventsContainer: {
+      paddingHorizontal: spacing[4],
+      gap: spacing[2],
+    },
+    eventCard: {
+      backgroundColor: colors.surfaceMuted,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.md,
+      padding: spacing[3],
+    },
+    eventBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginBottom: 4,
+    },
+    eventDateText: {
+      ...typography.caption,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    eventTitle: {
+      ...typography.cardTitle,
+      fontSize: 14,
+      color: colors.text,
+      marginBottom: 2,
+    },
+    eventSubtitle: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginBottom: 2,
+    },
+    eventTimeText: {
+      ...typography.caption,
+      color: colors.textMuted,
+    },
+    listContainerTopBorder: {
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    aiBanner: {
+      marginHorizontal: spacing[4],
+      marginTop: spacing[3],
+      marginBottom: spacing[1],
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: radii.md,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      padding: spacing[3],
+    },
+    aiBannerHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[2],
+      marginBottom: spacing[2],
+    },
+    aiIconBadge: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    aiBannerTitle: {
+      ...typography.cardTitle,
+      fontSize: 14,
+      color: colors.text,
+    },
+    aiBannerSubtitle: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      fontSize: 11,
+    },
+    aiBannerButtons: {
+      flexDirection: 'row',
+      gap: spacing[2],
+    },
+    aiPrimaryBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      backgroundColor: colors.primary,
+      borderRadius: radii.sm,
+      paddingVertical: 7,
+    },
+    aiPrimaryBtnText: {
+      ...typography.label,
+      fontSize: 12,
+      color: '#FFFFFF',
+      fontWeight: '600',
+    },
+    aiSecondaryBtn: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      backgroundColor: colors.primarySoft,
+      borderRadius: radii.sm,
+      borderWidth: 1,
+      borderColor: isDark ? colors.primary : '#BFDBFE',
+      paddingVertical: 7,
+    },
+    aiSecondaryBtnText: {
+      ...typography.label,
+      fontSize: 12,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    feedContainer: {
+      paddingHorizontal: spacing[4],
+      gap: spacing[2],
+    },
+    postCard: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.md,
+      padding: spacing[3],
+      marginBottom: spacing[2],
+    },
+    postHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[3],
+      marginBottom: spacing[2],
+    },
+    avatarTouchable: {
+      borderRadius: radii.full,
+    },
+    postAuthorInfo: {
+      flex: 1,
+    },
+    postAuthorName: {
+      ...typography.label,
+      fontSize: 14,
+      color: colors.text,
+      fontWeight: '700',
+    },
+    postTimestamp: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      fontSize: 11,
+      marginTop: 1,
+    },
+    postContentText: {
+      ...typography.bodySmall,
+      color: colors.text,
+      lineHeight: 18,
+      marginBottom: spacing[2],
+    },
+    postFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[4],
+      paddingTop: spacing[2],
+      borderTopWidth: 1,
+      borderTopColor: colors.borderLight,
+    },
+    postStatItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    postStatText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      fontSize: 11,
+    },
+  });

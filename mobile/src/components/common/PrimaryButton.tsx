@@ -7,7 +7,7 @@ import {
   ViewStyle,
   TextStyle,
 } from 'react-native';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useTheme } from '../../theme';
 import { Icon, IconName } from './Icon';
 
 interface PrimaryButtonProps {
@@ -31,6 +31,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
   labelStyle,
   size = 'md',
 }) => {
+  const { colors } = useTheme();
   const isDisabled = disabled || isLoading;
 
   const sizeStyle =
@@ -49,6 +50,7 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
       accessibilityLabel={label}
       style={[
         styles.button,
+        { backgroundColor: colors.primary },
         sizeStyle,
         isDisabled && styles.disabled,
         style,
@@ -75,7 +77,6 @@ export const PrimaryButton: React.FC<PrimaryButtonProps> = ({
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: colors.primary,
     borderRadius: radii.md,
     flexDirection: 'row',
     alignItems: 'center',
@@ -99,10 +100,10 @@ const styles = StyleSheet.create({
     ...typography.button,
     color: '#FFFFFF',
   },
-  disabled: {
-    opacity: 0.5,
-  },
   icon: {
     marginRight: spacing[2],
+  },
+  disabled: {
+    opacity: 0.5,
   },
 });

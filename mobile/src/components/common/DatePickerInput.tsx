@@ -8,7 +8,7 @@ import {
   StyleProp,
   ViewStyle,
 } from 'react-native';
-import { colors, radii, spacing } from '../../theme';
+import { radii, spacing, useTheme } from '../../theme';
 import { Icon } from './Icon';
 import { formatFriendlyDate } from './CalendarDatePickerModal';
 
@@ -33,6 +33,8 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
   style,
   error,
 }) => {
+  const { colors } = useTheme();
+
   const handlePress = () => {
     Keyboard.dismiss();
     if (!disabled) {
@@ -44,16 +46,19 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
 
   return (
     <View style={[styles.container, style]}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>}
       <TouchableOpacity
         onPress={handlePress}
         disabled={disabled}
         activeOpacity={0.7}
         style={[
           styles.field,
-          !displayText && styles.fieldPlaceholder,
-          error ? styles.fieldError : undefined,
-          disabled ? styles.fieldDisabled : undefined,
+          {
+            backgroundColor: colors.inputBg,
+            borderColor: colors.border,
+          },
+          error ? { borderColor: colors.danger } : undefined,
+          disabled ? { opacity: 0.6, backgroundColor: colors.surfaceMuted } : undefined,
         ]}
       >
         <View style={styles.leftContent}>
@@ -65,7 +70,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
           <Text
             style={[
               styles.text,
-              !displayText ? styles.placeholderText : styles.valueText,
+              !displayText ? { color: colors.placeholder } : { color: colors.text, fontWeight: '600' },
             ]}
             numberOfLines={1}
           >
@@ -86,7 +91,7 @@ export const DatePickerInput: React.FC<DatePickerInputProps> = ({
           </TouchableOpacity>
         )}
       </TouchableOpacity>
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>}
     </View>
   );
 };
@@ -98,7 +103,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontWeight: '600',
-    color: colors.textSecondary,
     marginBottom: spacing[1],
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -107,22 +111,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
-    borderColor: '#E2E8F0',
     borderRadius: radii.sm,
     paddingHorizontal: spacing[3],
     height: 48,
-  },
-  fieldPlaceholder: {
-    borderColor: '#E2E8F0',
-  },
-  fieldError: {
-    borderColor: colors.danger,
-  },
-  fieldDisabled: {
-    opacity: 0.6,
-    backgroundColor: '#F1F5F9',
   },
   leftContent: {
     flexDirection: 'row',
@@ -134,19 +126,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  placeholderText: {
-    color: colors.textMuted,
-  },
-  valueText: {
-    color: colors.text,
-    fontWeight: '600',
-  },
   clearBtn: {
     padding: 4,
   },
   errorText: {
     fontSize: 11,
-    color: colors.danger,
     marginTop: 4,
   },
 });

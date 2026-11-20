@@ -11,30 +11,45 @@ import {
   Image,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../types/navigation';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useThemedStyles, ColorPalette } from '../../theme';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { SecondaryButton } from '../../components/common/SecondaryButton';
 import { Icon } from '../../components/common/Icon';
 import { useAuthStore } from '../../store/authStore';
+import { validateEmail, validatePassword } from '../../utils/validation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'SignIn'>;
 
 export const SignInScreen: React.FC<Props> = ({ navigation }) => {
   const insets = useSafeAreaInsets();
+  const { styles, colors } = useThemedStyles(createStyles);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
 
   const { signIn, isLoading, error, enterDemoStudentMode } = useAuthStore();
 
   const handleSignIn = async () => {
-    if (!email.trim() || !password.trim()) {
+    const emailError = validateEmail(email);
+    const passwordError = validatePassword(password, false);
+
+    if (emailError || passwordError) {
+      setErrors({
+        email: emailError || undefined,
+        password: passwordError || undefined,
+      });
       return;
     }
-    const success = await signIn({ email, password });
-    if (success) {
+
+    setErrors({});
+    const success = await signIn({ email: email.trim(), password });
+    const authState = useAuthStore.getState();
+    if (authState.requiresVerification) {
+      navigation.navigate('VerifyEmail', { email: authState.unverifiedEmail || email.trim() });
+    } else if (success) {
       navigation.replace('MainTabs', { screen: 'Home' });
     }
   };
@@ -45,18 +60,24 @@ export const SignInScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardContainer}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={[
-          styles.scrollContainer,
-          { paddingTop: insets.top + spacing[6], paddingBottom: insets.bottom + spacing[4] },
-        ]}
-        keyboardShouldPersistTaps="handled"
+    <SafeAreaView style={styles.safeArea} edges={['top', 'bottom', 'left', 'right']}>
+      <KeyboardAvoidingView
+        style={styles.keyboardContainer}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.brandContainer}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContainer,
+            {
+              paddingTop: spacing[3],
+              paddingBottom: Math.max(insets.bottom, 24) + 40,
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          <View style={styles.brandContainer}>
           <Image
             source={require('../../../assets/brand/uplink-emblem.png')}
             style={styles.brandLogo}
@@ -81,18 +102,24 @@ export const SignInScreen: React.FC<Props> = ({ navigation }) => {
 
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Campus Email</Text>
-            <View style={styles.inputContainer}>
-              <Icon name="user" size={18} color={colors.textSecondary} style={styles.inputIcon} />
+            <View style={[styles.inputContainer, errors.email ? styles.inputContainerError : null]}>
+              <Icon name="user" size={18} color={errors.email ? colors.danger : colors.textSecondary} style={styles.inputIcon} />
               <TextInput
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(text) => {
+                  setEmail(text);
+                  if (errors.email) {
+                    setErrors((prev) => ({ ...prev, email: undefined }));
+                  }
+                }}
                 placeholder="student@campus.edu"
-                placeholderTextColor={colors.textMuted}
+                placeholderTextColor={colors.placeholder}
                 autoCapitalize="none"
                 keyboardType="email-address"
                 style={styles.textInput}
               />
             </View>
+            {errors.email ? <Text style={styles.fieldError}>{errors.email}</Text> : null}
           </View>
 
           <View style={styles.fieldGroup}>
@@ -106,13 +133,18 @@ export const SignInScreen: React.FC<Props> = ({ navigation }) => {
                 <Text style={styles.forgotPasswordText}>Forgot password?</Text>
               </TouchableOpacity>
             </View>
-            <View style={styles.inputContainer}>
-              <Icon name="award" size={18} color={colors.textSecondary} style={styles.inputIcon} />
+            <View style={[styles.inputContainer, errors.password ? styles.inputContainerError : null]}>
+              <Icon name="award" size={18} color={errors.password ? colors.danger : colors.textSecondary} style={styles.inputIcon} />
               <TextInput
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(text) => {
+                  setPassword(text);
+                  if (errors.password) {
+                    setErrors((prev) => ({ ...prev, password: undefined }));
+                  }
+                }}
                 placeholder="Enter password"
-                placeholderTextColor={colors.textMuted}
+                placeholderTextColor={colors.placeholder}
                 secureTextEntry={!showPassword}
                 style={styles.textInput}
               />
@@ -125,6 +157,7 @@ export const SignInScreen: React.FC<Props> = ({ navigation }) => {
                 </Text>
               </TouchableOpacity>
             </View>
+            {errors.password ? <Text style={styles.fieldError}>{errors.password}</Text> : null}
           </View>
 
           <PrimaryButton
@@ -163,151 +196,167 @@ export const SignInScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+  </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  keyboardContainer: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContainer: {
-    paddingHorizontal: spacing[4],
-    justifyContent: 'center',
-    flexGrow: 1,
-  },
-  brandContainer: {
-    alignItems: 'center',
-    marginBottom: spacing[6],
-  },
-  brandLogo: {
-    width: 68,
-    height: 68,
-    marginBottom: spacing[2],
-  },
-  brandTitle: {
-    ...typography.screenTitle,
-    fontSize: 28,
-    fontWeight: '800',
-    color: colors.primary,
-    letterSpacing: 1.5,
-  },
-  headerSubtitle: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  formCard: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing[5],
-  },
-  formTitle: {
-    ...typography.screenTitle,
-    fontSize: 18,
-    color: colors.text,
-    marginBottom: 4,
-  },
-  formDescription: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing[4],
-    lineHeight: 18,
-  },
-  errorBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.dangerSoft,
-    borderWidth: 1,
-    borderColor: '#FECACA',
-    borderRadius: radii.sm,
-    padding: spacing[3],
-    marginBottom: spacing[3],
-    gap: spacing[2],
-  },
-  errorText: {
-    ...typography.caption,
-    color: colors.danger,
-    flex: 1,
-  },
-  fieldGroup: {
-    marginBottom: spacing[4],
-  },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  fieldLabel: {
-    ...typography.label,
-    marginBottom: spacing[1],
-  },
-  forgotPasswordText: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '500',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.surfaceMuted,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing[3],
-    height: 44,
-  },
-  inputIcon: {
-    marginRight: spacing[2],
-  },
-  textInput: {
-    flex: 1,
-    ...typography.body,
-    paddingVertical: 0,
-    color: colors.text,
-  },
-  showPasswordText: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  signInButton: {
-    marginTop: spacing[2],
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: spacing[4],
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: colors.border,
-  },
-  dividerText: {
-    ...typography.caption,
-    color: colors.textMuted,
-    paddingHorizontal: spacing[3],
-  },
-  demoButton: {
-    backgroundColor: colors.surfaceMuted,
-  },
-  footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: spacing[6],
-  },
-  footerText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  signUpLink: {
-    ...typography.bodySmall,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-});
-
+const createStyles = (colors: ColorPalette, isDark: boolean) =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    keyboardContainer: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContainer: {
+      paddingHorizontal: spacing[4],
+      justifyContent: 'center',
+      flexGrow: 1,
+    },
+    brandContainer: {
+      alignItems: 'center',
+      marginBottom: spacing[6],
+    },
+    brandLogo: {
+      width: 68,
+      height: 68,
+      marginBottom: spacing[2],
+    },
+    brandTitle: {
+      ...typography.screenTitle,
+      fontSize: 28,
+      fontWeight: '800',
+      color: colors.primary,
+      letterSpacing: 1.5,
+    },
+    headerSubtitle: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    formCard: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing[5],
+    },
+    formTitle: {
+      ...typography.screenTitle,
+      fontSize: 18,
+      color: colors.text,
+      marginBottom: 4,
+    },
+    formDescription: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      marginBottom: spacing[4],
+      lineHeight: 18,
+    },
+    errorBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.dangerSoft,
+      borderWidth: 1,
+      borderColor: isDark ? colors.danger : '#FECACA',
+      borderRadius: radii.sm,
+      padding: spacing[3],
+      marginBottom: spacing[3],
+      gap: spacing[2],
+    },
+    errorText: {
+      ...typography.caption,
+      color: colors.danger,
+      flex: 1,
+    },
+    fieldGroup: {
+      marginBottom: spacing[4],
+    },
+    labelRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    fieldLabel: {
+      ...typography.label,
+      color: colors.text,
+      marginBottom: spacing[1],
+    },
+    forgotPasswordText: {
+      ...typography.caption,
+      color: colors.primary,
+      fontWeight: '500',
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.inputBg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.md,
+      paddingHorizontal: spacing[3],
+      height: 44,
+    },
+    inputContainerError: {
+      borderColor: colors.danger,
+      borderWidth: 1.5,
+    },
+    fieldError: {
+      ...typography.caption,
+      color: colors.danger,
+      marginTop: 4,
+      marginLeft: 2,
+    },
+    inputIcon: {
+      marginRight: spacing[2],
+    },
+    textInput: {
+      flex: 1,
+      ...typography.body,
+      paddingVertical: 0,
+      color: colors.text,
+    },
+    showPasswordText: {
+      ...typography.caption,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    signInButton: {
+      marginTop: spacing[2],
+    },
+    dividerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: spacing[4],
+    },
+    dividerLine: {
+      flex: 1,
+      height: 1,
+      backgroundColor: colors.border,
+    },
+    dividerText: {
+      ...typography.caption,
+      color: colors.textMuted,
+      paddingHorizontal: spacing[3],
+    },
+    demoButton: {
+      backgroundColor: colors.surfaceMuted,
+    },
+    footerRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: spacing[6],
+    },
+    footerText: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+    },
+    signUpLink: {
+      ...typography.bodySmall,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+  });

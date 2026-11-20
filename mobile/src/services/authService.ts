@@ -14,6 +14,8 @@ export interface BackendAuthResponse {
   email: string;
   fullName: string;
   roles: string[];
+  requiresVerification?: boolean;
+  isVerified?: boolean;
 }
 
 export interface BackendRole {
@@ -63,7 +65,8 @@ export interface PasswordResetPayload {
 
 export interface VerifyEmailPayload {
   email: string;
-  token: string;
+  otp: string;
+  token?: string;
 }
 
 /**
@@ -100,6 +103,18 @@ class AuthService {
 
     if (res.success && res.data) {
       const authData = res.data;
+
+      // Strict enforcement: Unverified users can NEVER receive or persist active sessions
+      if (authData.isVerified === false || authData.requiresVerification || !authData.token) {
+        return {
+          success: false,
+          error: 'Email verification required. A 6-digit code has been sent to your email.',
+          code: 'EMAIL_NOT_VERIFIED',
+          raw: { code: 'EMAIL_NOT_VERIFIED', email: authData.email || payload.email.trim() },
+          statusCode: 403,
+        };
+      }
+
       const role = normalizeUserRole(authData.roles);
 
       // Persist auth tokens immediately so subsequent authenticated calls succeed
@@ -119,6 +134,7 @@ class AuthService {
         experience: [],
         certifications: [],
         achievements: [],
+        isVerified: authData.isVerified ?? true,
       };
 
       // Fetch live digital portfolio from Spring Boot backend if available
@@ -127,6 +143,7 @@ class AuthService {
         if (portfolioRes.success && portfolioRes.data) {
           studentUser = mapPortfolioToStudentProfile(portfolioRes.data);
           studentUser.role = role;
+          studentUser.isVerified = authData.isVerified ?? true;
         }
       } catch {
         // Fallback to basic user identity
@@ -144,9 +161,18 @@ class AuthService {
       return { success: true, data: session, statusCode: res.statusCode };
     }
 
+    const isUnverified =
+      res.code === 'EMAIL_NOT_VERIFIED' ||
+      (res.raw as any)?.code === 'EMAIL_NOT_VERIFIED' ||
+      (res.statusCode === 403 && (res.error?.toLowerCase().includes('verify') || (res.raw as any)?.message?.toLowerCase().includes('verify')));
+
     return {
       success: false,
-      error: res.error || 'Authentication failed. Please verify your credentials.',
+      error: res.error || (isUnverified ? 'Email verification required. A 6-digit code has been sent to your email.' : 'Authentication failed. Please verify your credentials.'),
+      code: isUnverified ? 'EMAIL_NOT_VERIFIED' : res.code,
+      raw: isUnverified
+        ? { code: 'EMAIL_NOT_VERIFIED', email: (res.raw as any)?.email || payload.email.trim() }
+        : res.raw,
       validationErrors: res.validationErrors,
       statusCode: res.statusCode,
     };
@@ -168,6 +194,37 @@ class AuthService {
 
     if (res.success && res.data) {
       const authData = res.data;
+
+      // When registration requires 6-digit OTP verification (standard flow)
+      if (authData.requiresVerification || !authData.token) {
+        return {
+          success: true,
+          data: {
+            token: '',
+            refreshToken: '',
+            role: 'STUDENT',
+            user: {
+              id: authData.id || '',
+              email: authData.email || payload.email.trim(),
+              fullName: authData.fullName || payload.fullName.trim(),
+              role: 'STUDENT',
+              institution: payload.institution || 'Campus Community',
+              department: payload.department || 'Computer Science and Engineering',
+              program: 'Bachelor of Technology',
+              graduationYear: payload.graduationYear || 2027,
+              skills: [],
+              projects: [],
+              experience: [],
+              certifications: [],
+              achievements: [],
+              isVerified: false,
+            },
+          },
+          message: res.message || 'Verification required',
+          statusCode: res.statusCode,
+        };
+      }
+
       const role = normalizeUserRole(authData.roles);
 
       // Persist auth tokens immediately
@@ -187,6 +244,7 @@ class AuthService {
         experience: [],
         certifications: [],
         achievements: [],
+        isVerified: false,
       };
 
       // If user supplied educational details during signup, initialize backend education record
@@ -198,10 +256,9 @@ class AuthService {
             degree: 'Bachelor of Technology',
             startYear: (payload.graduationYear || 2027) - 4,
             endYear: payload.graduationYear || 2027,
-            isCurrent: true,
           });
         } catch {
-          // ignore education init error
+          // Non-critical education initialization fallback
         }
       }
 
@@ -271,10 +328,75 @@ class AuthService {
   }
 
   /**
-   * Verify email address via Spring Boot /api/auth/verify-email
+   * Verify email address with 6-digit OTP via Spring Boot /api/auth/verify-email
+   * Logs the user in immediately upon successful verification.
    */
-  async verifyEmail(payload: VerifyEmailPayload): Promise<ApiResponse<string>> {
-    return apiClient.post<string>('/auth/verify-email', payload);
+  async verifyEmail(payload: VerifyEmailPayload): Promise<ApiResponse<AuthSession>> {
+    const res = await apiClient.post<BackendAuthResponse>('/auth/verify-email', {
+      email: payload.email.trim(),
+      otp: payload.otp || payload.token,
+    });
+
+    if (res.success && res.data && res.data.token) {
+      const authData = res.data;
+      const role = normalizeUserRole(authData.roles);
+
+      await apiClient.setAuthToken(authData.token, authData.refreshToken);
+
+      let studentUser: StudentProfile = {
+        id: authData.id,
+        email: authData.email,
+        fullName: authData.fullName,
+        role,
+        institution: 'Campus Community',
+        department: 'General',
+        program: 'Undergraduate',
+        graduationYear: 2027,
+        skills: [],
+        projects: [],
+        experience: [],
+        certifications: [],
+        achievements: [],
+        isVerified: true,
+      };
+
+      try {
+        const portfolioRes = await apiClient.get<DigitalPortfolioDto>('/profile/portfolio');
+        if (portfolioRes.success && portfolioRes.data) {
+          studentUser = mapPortfolioToStudentProfile(portfolioRes.data);
+          studentUser.role = role;
+          studentUser.isVerified = true;
+        }
+      } catch {
+        // Fallback to basic profile
+      }
+
+      const session: AuthSession = {
+        token: authData.token,
+        refreshToken: authData.refreshToken,
+        user: studentUser,
+        role,
+      };
+
+      await tokenStorage.saveSessionData(session);
+
+      return { success: true, data: session, statusCode: res.statusCode };
+    }
+
+    return {
+      success: false,
+      error: res.error || 'Verification failed. Please check your 6-digit code.',
+      statusCode: res.statusCode,
+    };
+  }
+
+  /**
+   * Resend 6-digit verification code with 60-second cooldown via Spring Boot /api/auth/resend-verification
+   */
+  async resendVerification(email: string): Promise<ApiResponse<string>> {
+    return apiClient.post<string>('/auth/resend-verification', {
+      email: email.trim(),
+    });
   }
 
   /**

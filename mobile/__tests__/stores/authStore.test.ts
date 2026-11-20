@@ -150,5 +150,51 @@ describe('useAuthStore', () => {
     expect(state.token).toBe('uplink_demo_token_authenticated');
     expect(state.user?.fullName).toBe(testStudentProfile.fullName);
   });
+
+  test('verifies email with 6-digit OTP and logs user in', async () => {
+    const verifiedSession = {
+      token: 'verified_jwt_token',
+      refreshToken: 'verified_refresh_token',
+      user: { ...testStudentProfile, email: 'verify@campus.edu', isVerified: true },
+      role: 'STUDENT' as const,
+    };
+
+    jest.spyOn(authService, 'verifyEmail').mockResolvedValueOnce({
+      success: true,
+      data: verifiedSession,
+      statusCode: 200,
+    });
+
+    const result = await useAuthStore.getState().verifyEmail('verify@campus.edu', '654321');
+
+    expect(result.success).toBe(true);
+    const state = useAuthStore.getState();
+    expect(state.isAuthenticated).toBe(true);
+    expect(state.token).toBe('verified_jwt_token');
+    expect(state.user?.email).toBe('verify@campus.edu');
+    expect(state.user?.isVerified).toBe(true);
+    expect(state.requiresVerification).toBe(false);
+  });
+
+  test('detects unverified email on login and sets requiresVerification', async () => {
+    jest.spyOn(authService, 'signIn').mockResolvedValueOnce({
+      success: false,
+      error: 'Please verify your email address.',
+      code: 'EMAIL_NOT_VERIFIED',
+      raw: { code: 'EMAIL_NOT_VERIFIED', email: 'unverified@campus.edu' },
+      statusCode: 403,
+    });
+
+    const result = await useAuthStore.getState().signIn({
+      email: 'unverified@campus.edu',
+      password: 'password123',
+    });
+
+    expect(result).toBe(false);
+    const state = useAuthStore.getState();
+    expect(state.isAuthenticated).toBe(false);
+    expect(state.requiresVerification).toBe(true);
+    expect(state.unverifiedEmail).toBe('unverified@campus.edu');
+  });
 });
 

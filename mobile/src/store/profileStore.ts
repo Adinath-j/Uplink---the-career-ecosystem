@@ -30,6 +30,7 @@ interface ProfileState {
   addCertification: (certification: BackendCertification) => Promise<boolean>;
   updateCertification: (id: string, certification: BackendCertification) => Promise<boolean>;
   deleteCertification: (id: string) => Promise<boolean>;
+  uploadAvatar: (uri: string, mimeType?: string, fileName?: string) => Promise<boolean>;
   setProfile: (profile: StudentProfile | null) => void;
   clearError: () => void;
 }
@@ -265,6 +266,29 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       error: res.error || 'Failed to delete certification.',
     });
     return false;
+  },
+
+  uploadAvatar: async (uri, mimeType = 'image/jpeg', fileName = 'avatar.jpg') => {
+    set({ isActionLoading: true, error: null });
+    try {
+      const avatarUrl = await profileService.uploadAvatar(uri, mimeType, fileName);
+      const current = get().profile;
+      if (current) {
+        const updated = { ...current, avatarUrl };
+        set({ profile: updated, isActionLoading: false, error: null });
+        saveScopedCache('profile', updated);
+      } else {
+        await get().fetchProfile();
+        set({ isActionLoading: false, error: null });
+      }
+      return true;
+    } catch (err: any) {
+      set({
+        isActionLoading: false,
+        error: err?.message || 'Failed to upload avatar image.',
+      });
+      return false;
+    }
   },
 
   setProfile: (profile) => set({ profile }),

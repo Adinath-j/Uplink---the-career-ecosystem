@@ -20,6 +20,7 @@ export type RootStackParamList = {
   SignIn: undefined;
   SignUp: undefined;
   ForgotPassword: undefined;
+  VerifyEmail: { email: string };
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
 
   // Modals and shared detail screens

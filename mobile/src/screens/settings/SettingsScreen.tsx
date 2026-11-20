@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useTheme, useThemedStyles, ThemeMode, ColorPalette } from '../../theme';
 import { AppHeader } from '../../components/common/AppHeader';
 import { Avatar } from '../../components/common/Avatar';
 import { Icon } from '../../components/common/Icon';
@@ -21,12 +21,15 @@ import { SecondaryButton } from '../../components/common/SecondaryButton';
 import { useAuthStore } from '../../store/authStore';
 import { useProfileStore } from '../../store/profileStore';
 import { authService } from '../../services/authService';
+import { validateEmail } from '../../utils/validation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>;
 
 export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const { user, signOut } = useAuthStore();
   const { profile } = useProfileStore();
+  const { themeMode, setThemeMode, isDark } = useTheme();
+  const { styles, colors } = useThemedStyles(createStyles);
 
   // Notification Toggles (persisted locally)
   const [pushEnabled, setPushEnabled] = useState(true);
@@ -57,10 +60,10 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     ]);
   };
 
-
   const handleSendPasswordReset = async () => {
-    if (!resetEmail.trim()) {
-      Alert.alert('Validation Error', 'Please enter your registered email address.');
+    const emailErr = validateEmail(resetEmail);
+    if (emailErr) {
+      Alert.alert('Validation Error', emailErr);
       return;
     }
 
@@ -99,6 +102,12 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const displayEmail = profile?.email || user?.email || 'student@campus.edu';
   const isVerified = Boolean(profile?.isVerified || (user as any)?.isVerified);
 
+  const themeOptions: Array<{ mode: ThemeMode; label: string; icon: 'sun' | 'moon' | 'system'; subtitle: string }> = [
+    { mode: 'light', label: 'Light', icon: 'sun', subtitle: 'Always light' },
+    { mode: 'dark', label: 'Dark', icon: 'moon', subtitle: 'Always dark' },
+    { mode: 'system', label: 'System', icon: 'system', subtitle: 'Match OS' },
+  ];
+
   return (
     <View style={styles.container}>
       <AppHeader
@@ -116,20 +125,65 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.badgeRow}>
               {isVerified ? (
                 <View style={styles.verifiedBadge}>
-                  <Icon name="check-circle" size={13} color="#059669" />
+                  <Icon name="check-circle" size={13} color={colors.success} />
                   <Text style={styles.verifiedText}>Verified Student</Text>
                 </View>
               ) : (
                 <TouchableOpacity
                   style={styles.unverifiedBadge}
-                  onPress={() => navigation.navigate('VerificationUpload')}
+                  onPress={() => displayEmail && navigation.navigate('VerifyEmail', { email: displayEmail })}
                   activeOpacity={0.7}
                 >
                   <Icon name="shield-check" size={13} color={colors.primary} />
-                  <Text style={styles.unverifiedText}>Get Verified &rarr;</Text>
+                  <Text style={styles.unverifiedText}>Verify Email &rarr;</Text>
                 </TouchableOpacity>
               )}
             </View>
+          </View>
+        </View>
+
+        {/* Section 0: Appearance / Theme */}
+        <View style={styles.section}>
+          <Text style={styles.sectionHeader}>Appearance</Text>
+          <Text style={styles.sectionDescription}>
+            Customize your app theme or follow your device settings.
+          </Text>
+
+          <View style={styles.themeSelectorContainer}>
+            {themeOptions.map((item) => {
+              const isSelected = themeMode === item.mode;
+              return (
+                <TouchableOpacity
+                  key={item.mode}
+                  style={[
+                    styles.themeCard,
+                    isSelected && styles.themeCardSelected,
+                  ]}
+                  onPress={() => setThemeMode(item.mode)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Switch to ${item.label} theme`}
+                  accessibilityState={{ selected: isSelected }}
+                >
+                  <View style={[styles.themeIconWrapper, isSelected && styles.themeIconWrapperSelected]}>
+                    <Icon
+                      name={item.icon}
+                      size={20}
+                      color={isSelected ? colors.primary : colors.textSecondary}
+                    />
+                  </View>
+                  <Text style={[styles.themeCardLabel, isSelected && styles.themeCardLabelSelected]}>
+                    {item.label}
+                  </Text>
+                  <Text style={styles.themeCardSubtitle}>{item.subtitle}</Text>
+                  {isSelected && (
+                    <View style={styles.themeActiveCheck}>
+                      <Icon name="check" size={12} color="#FFFFFF" />
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
@@ -195,7 +249,7 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             <Switch
               value={pushEnabled}
               onValueChange={setPushEnabled}
-              trackColor={{ false: '#E5E7EB', true: colors.primary }}
+              trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor="#FFFFFF"
             />
           </View>
@@ -209,7 +263,7 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
               value={jobAlerts}
               onValueChange={setJobAlerts}
               disabled={!pushEnabled}
-              trackColor={{ false: '#E5E7EB', true: colors.primary }}
+              trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor="#FFFFFF"
             />
           </View>
@@ -223,7 +277,7 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
               value={qaAlerts}
               onValueChange={setQaAlerts}
               disabled={!pushEnabled}
-              trackColor={{ false: '#E5E7EB', true: colors.primary }}
+              trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor="#FFFFFF"
             />
           </View>
@@ -237,7 +291,7 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
               value={mentorAlerts}
               onValueChange={setMentorAlerts}
               disabled={!pushEnabled}
-              trackColor={{ false: '#E5E7EB', true: colors.primary }}
+              trackColor={{ false: colors.border, true: colors.primary }}
               thumbColor="#FFFFFF"
             />
           </View>
@@ -294,7 +348,7 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
             accessibilityRole="button"
             accessibilityLabel="Sign out of Uplink"
           >
-            <Icon name="close" size={18} color="#DC2626" />
+            <Icon name="close" size={18} color={colors.danger} />
             <Text style={styles.signOutText}>Sign Out of Uplink</Text>
           </TouchableOpacity>
         </View>
@@ -383,210 +437,276 @@ export const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    paddingBottom: spacing[8],
-  },
-  accountCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: spacing[4],
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    gap: spacing[3],
-  },
-  accountInfo: {
-    flex: 1,
-  },
-  accountName: {
-    ...typography.cardTitle,
-    fontSize: 17,
-    color: colors.text,
-  },
-  accountEmail: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 1,
-  },
-  badgeRow: {
-    marginTop: 6,
-    flexDirection: 'row',
-  },
-  verifiedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#ECFDF5',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-  },
-  verifiedText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#059669',
-  },
-  unverifiedBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: radii.full,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  unverifiedText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  section: {
-    marginTop: spacing[4],
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing[1],
-  },
-  sectionHeader: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[3],
-    paddingBottom: spacing[2],
-  },
-  rowItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#F3F4F6',
-  },
-  rowIcon: {
-    marginRight: spacing[3],
-  },
-  rowContent: {
-    flex: 1,
-  },
-  rowTitle: {
-    ...typography.body,
-    fontSize: 15,
-    fontWeight: '500',
-    color: colors.text,
-  },
-  rowSubtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#F3F4F6',
-  },
-  staticRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#F3F4F6',
-  },
-  staticLabel: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  staticValue: {
-    ...typography.bodySmall,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  signOutSection: {
-    marginTop: spacing[6],
-    paddingHorizontal: spacing[4],
-  },
-  signOutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: radii.md,
-    backgroundColor: '#FEF2F2',
-    borderWidth: 1,
-    borderColor: '#FCA5A5',
-  },
-  signOutText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#DC2626',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing[4],
-  },
-  modalCard: {
-    width: '100%',
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    padding: spacing[5],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing[2],
-  },
-  modalTitle: {
-    ...typography.h3,
-    fontSize: 18,
-    color: colors.text,
-  },
-  modalDescription: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: spacing[4],
-  },
-  modalInput: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[3],
-    fontSize: 15,
-    color: colors.text,
-    backgroundColor: colors.background,
-    marginBottom: spacing[4],
-  },
-  modalActionRow: {
-    flexDirection: 'row',
-    gap: spacing[3],
-  },
-});
+const createStyles = (colors: ColorPalette, isDark: boolean) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      paddingBottom: spacing[8],
+    },
+    accountCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: spacing[4],
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      gap: spacing[3],
+    },
+    accountInfo: {
+      flex: 1,
+    },
+    accountName: {
+      ...typography.cardTitle,
+      fontSize: 17,
+      color: colors.text,
+    },
+    accountEmail: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginTop: 1,
+    },
+    badgeRow: {
+      marginTop: 6,
+      flexDirection: 'row',
+    },
+    verifiedBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: colors.successSoft,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: radii.full,
+      borderWidth: 1,
+      borderColor: isDark ? colors.success : '#A7F3D0',
+    },
+    verifiedText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.success,
+    },
+    unverifiedBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: colors.primarySoft,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: radii.full,
+      borderWidth: 1,
+      borderColor: isDark ? colors.primary : '#BFDBFE',
+    },
+    unverifiedText: {
+      fontSize: 11,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    section: {
+      marginTop: spacing[4],
+      backgroundColor: colors.surface,
+      borderTopWidth: 1,
+      borderBottomWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: spacing[1],
+    },
+    sectionHeader: {
+      ...typography.caption,
+      fontWeight: '700',
+      color: colors.textMuted,
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+      paddingHorizontal: spacing[4],
+      paddingTop: spacing[3],
+      paddingBottom: spacing[2],
+    },
+    sectionDescription: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      paddingHorizontal: spacing[4],
+      paddingBottom: spacing[3],
+    },
+    themeSelectorContainer: {
+      flexDirection: 'row',
+      gap: spacing[3],
+      paddingHorizontal: spacing[4],
+      paddingBottom: spacing[3],
+    },
+    themeCard: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing[3],
+      paddingHorizontal: spacing[2],
+      borderRadius: radii.md,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+      backgroundColor: colors.surfaceElevated,
+      position: 'relative',
+    },
+    themeCardSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primarySoft,
+    },
+    themeIconWrapper: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      backgroundColor: colors.surfaceMuted,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: 6,
+    },
+    themeIconWrapperSelected: {
+      backgroundColor: isDark ? 'rgba(59, 130, 246, 0.2)' : '#DBEAFE',
+    },
+    themeCardLabel: {
+      ...typography.bodySmall,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    themeCardLabelSelected: {
+      color: colors.primary,
+      fontWeight: '700',
+    },
+    themeCardSubtitle: {
+      fontSize: 10,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    themeActiveCheck: {
+      position: 'absolute',
+      top: 6,
+      right: 6,
+      width: 16,
+      height: 16,
+      borderRadius: 8,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    rowItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.borderLight,
+    },
+    rowIcon: {
+      marginRight: spacing[3],
+    },
+    rowContent: {
+      flex: 1,
+    },
+    rowTitle: {
+      ...typography.body,
+      fontSize: 15,
+      fontWeight: '500',
+      color: colors.text,
+    },
+    rowSubtitle: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    switchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.borderLight,
+    },
+    staticRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.borderLight,
+    },
+    staticLabel: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+    },
+    staticValue: {
+      ...typography.bodySmall,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    signOutSection: {
+      marginTop: spacing[6],
+      paddingHorizontal: spacing[4],
+    },
+    signOutBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 8,
+      paddingVertical: 14,
+      borderRadius: radii.md,
+      backgroundColor: colors.dangerSoft,
+      borderWidth: 1,
+      borderColor: isDark ? colors.danger : '#FCA5A5',
+    },
+    signOutText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.danger,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: isDark ? 'rgba(0,0,0,0.75)' : 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: spacing[4],
+    },
+    modalCard: {
+      width: '100%',
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      padding: spacing[5],
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing[2],
+    },
+    modalTitle: {
+      ...typography.h3,
+      fontSize: 18,
+      color: colors.text,
+    },
+    modalDescription: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      lineHeight: 20,
+      marginBottom: spacing[4],
+    },
+    modalInput: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[3],
+      fontSize: 15,
+      color: colors.text,
+      backgroundColor: colors.inputBg,
+      marginBottom: spacing[4],
+    },
+    modalActionRow: {
+      flexDirection: 'row',
+      gap: spacing[3],
+    },
+  });

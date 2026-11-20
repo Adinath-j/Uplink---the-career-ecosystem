@@ -3,7 +3,7 @@ import { StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MainTabParamList } from '../types/navigation';
-import { colors, typography } from '../theme';
+import { colors, typography, useTheme } from '../theme';
 import { Icon } from '../components/common/Icon';
 import { HomeScreen } from '../screens/home/HomeScreen';
 import { JobsScreen } from '../screens/jobs/JobsScreen';
@@ -35,17 +35,20 @@ const MentorsTabIcon = ({ color, size }: { color: string; size: number }) => (
 
 export const BottomTabNavigator: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const { colors: themeColors } = useTheme();
 
   return (
     <Tab.Navigator
       initialRouteName="Home"
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarActiveTintColor: themeColors.primary,
+        tabBarInactiveTintColor: themeColors.textSecondary,
         tabBarStyle: [
           styles.tabBar,
           {
+            backgroundColor: themeColors.surface,
+            borderTopColor: themeColors.border,
             height: 56 + Math.max(insets.bottom, 6),
             paddingBottom: Math.max(insets.bottom, 6),
           },

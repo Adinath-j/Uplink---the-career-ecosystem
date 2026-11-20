@@ -7,7 +7,7 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import { colors, radii, spacing } from '../../theme';
+import { radii, spacing, useTheme, useThemedStyles, ColorPalette } from '../../theme';
 import { Icon } from './Icon';
 import { PrimaryButton } from './PrimaryButton';
 import { SecondaryButton } from './SecondaryButton';
@@ -77,6 +77,9 @@ export const CalendarDatePickerModal: React.FC<CalendarDatePickerModalProps> = (
   onClear,
   onClose,
 }) => {
+  const { colors } = useTheme();
+  const { styles } = useThemedStyles(createStyles);
+
   const today = new Date();
   const todayIso = formatToIsoDate(today);
 
@@ -98,13 +101,18 @@ export const CalendarDatePickerModal: React.FC<CalendarDatePickerModalProps> = (
     if (visible) {
       const d = parseInitialDate();
       setCurrentMonthDate(d);
-      setSelectedDateIso(value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : formatToIsoDate(d));
+      setSelectedDateIso(value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : todayIso);
       setIsYearPickerOpen(false);
     }
   }, [visible, value]);
 
   const year = currentMonthDate.getFullYear();
-  const month = currentMonthDate.getMonth();
+  const month = currentMonthDate.getMonth(); // 0-indexed
+
+  // First day of month (0 = Sunday, 1 = Monday, ...)
+  const firstDayOfMonth = new Date(year, month, 1).getDay();
+  // Days in month
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const handlePrevMonth = () => {
     setCurrentMonthDate(new Date(year, month - 1, 1));
@@ -114,9 +122,8 @@ export const CalendarDatePickerModal: React.FC<CalendarDatePickerModalProps> = (
     setCurrentMonthDate(new Date(year, month + 1, 1));
   };
 
-  const handleSelectDay = (day: number) => {
-    const d = new Date(year, month, day);
-    const iso = formatToIsoDate(d);
+  const handleSelectDay = (dayNumber: number) => {
+    const iso = `${year}-${padZero(month + 1)}-${padZero(dayNumber)}`;
     setSelectedDateIso(iso);
   };
 
@@ -126,9 +133,9 @@ export const CalendarDatePickerModal: React.FC<CalendarDatePickerModalProps> = (
   };
 
   const handleQuickToday = () => {
-    const now = new Date();
-    setCurrentMonthDate(new Date(now.getFullYear(), now.getMonth(), 1));
-    setSelectedDateIso(formatToIsoDate(now));
+    const t = new Date();
+    setCurrentMonthDate(t);
+    setSelectedDateIso(formatToIsoDate(t));
   };
 
   const handleConfirm = () => {
@@ -137,31 +144,30 @@ export const CalendarDatePickerModal: React.FC<CalendarDatePickerModalProps> = (
   };
 
   const handleClear = () => {
-    if (onClear) onClear();
+    onClear?.();
     onClose();
   };
 
-  const firstDayOfWeek = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-
+  // Build grid of day items
   const daysGrid: (number | null)[] = [];
-  for (let i = 0; i < firstDayOfWeek; i++) {
+  for (let i = 0; i < firstDayOfMonth; i++) {
     daysGrid.push(null);
   }
   for (let d = 1; d <= daysInMonth; d++) {
     daysGrid.push(d);
   }
 
-  const currentYear = new Date().getFullYear();
+  // Generate range of years (currentYear - 40 to currentYear + 10)
+  const currentYear = today.getFullYear();
   const yearsList: number[] = [];
-  for (let y = currentYear + 5; y >= currentYear - 35; y--) {
+  for (let y = currentYear + 6; y >= currentYear - 35; y--) {
     yearsList.push(y);
   }
 
   return (
     <Modal
       visible={visible}
-      transparent
+      transparent={true}
       animationType="fade"
       onRequestClose={onClose}
     >
@@ -172,19 +178,24 @@ export const CalendarDatePickerModal: React.FC<CalendarDatePickerModalProps> = (
             <View>
               <Text style={styles.title}>{title}</Text>
               <Text style={styles.selectedSubtitle}>
-                {formatFriendlyDate(selectedDateIso) || 'Choose a date'}
+                {selectedDateIso ? formatFriendlyDate(selectedDateIso) : 'None selected'}
               </Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <TouchableOpacity
+              onPress={onClose}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+              style={styles.closeBtn}
+            >
               <Icon name="close" size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
-          {/* Month / Year Bar */}
+          {/* Month & Year Navigation Bar */}
           <View style={styles.monthBar}>
             <TouchableOpacity
               onPress={() => setIsYearPickerOpen(!isYearPickerOpen)}
               style={styles.monthYearSelector}
+              activeOpacity={0.7}
             >
               <Text style={styles.monthYearText}>
                 {MONTH_NAMES[month]} {year}
@@ -318,184 +329,185 @@ export const CalendarDatePickerModal: React.FC<CalendarDatePickerModalProps> = (
   );
 };
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing[4],
-  },
-  card: {
-    width: '100%',
-    maxWidth: 380,
-    backgroundColor: colors.surface,
-    borderRadius: radii.xl,
-    padding: spacing[5],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 12,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing[3],
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  selectedSubtitle: {
-    fontSize: 13,
-    color: colors.primary,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  closeBtn: {
-    padding: 4,
-  },
-  monthBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing[2],
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    marginBottom: spacing[3],
-  },
-  monthYearSelector: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: radii.md,
-    backgroundColor: '#F8FAFC',
-  },
-  monthYearText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  navButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  navBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F1F5F9',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  weekRow: {
-    flexDirection: 'row',
-    marginBottom: spacing[2],
-  },
-  weekCell: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  weekText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-  },
-  daysContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  dayCell: {
-    width: '14.28%',
-    aspectRatio: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginVertical: 2,
-    borderRadius: radii.full,
-  },
-  todayCell: {
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-  },
-  selectedDayCell: {
-    backgroundColor: colors.primary,
-  },
-  dayText: {
-    fontSize: 14,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  todayText: {
-    color: colors.primary,
-    fontWeight: '700',
-  },
-  selectedDayText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  quickBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: spacing[3],
-    paddingTop: spacing[2],
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-  },
-  quickBtn: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-  },
-  quickBtnText: {
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  yearPickerContainer: {
-    height: 220,
-    paddingVertical: spacing[2],
-  },
-  yearPickerLabel: {
-    fontSize: 12,
-    color: colors.textMuted,
-    fontWeight: '600',
-    marginBottom: spacing[2],
-  },
-  yearScroll: {
-    flex: 1,
-  },
-  yearGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    paddingBottom: 10,
-  },
-  yearChip: {
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: radii.md,
-    backgroundColor: '#F1F5F9',
-  },
-  yearChipSelected: {
-    backgroundColor: colors.primary,
-  },
-  yearChipText: {
-    fontSize: 13,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  yearChipTextSelected: {
-    color: '#FFFFFF',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: spacing[3],
-    marginTop: spacing[4],
-  },
-});
+const createStyles = (colors: ColorPalette, isDark: boolean) =>
+  StyleSheet.create({
+    backdrop: {
+      flex: 1,
+      backgroundColor: isDark ? 'rgba(0,0,0,0.75)' : 'rgba(0,0,0,0.55)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: spacing[4],
+    },
+    card: {
+      width: '100%',
+      maxWidth: 380,
+      backgroundColor: colors.surface,
+      borderRadius: radii.xl,
+      padding: spacing[5],
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.25,
+      shadowRadius: 16,
+      elevation: 12,
+    },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      marginBottom: spacing[3],
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    selectedSubtitle: {
+      fontSize: 13,
+      color: colors.primary,
+      fontWeight: '600',
+      marginTop: 2,
+    },
+    closeBtn: {
+      padding: 4,
+    },
+    monthBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: spacing[2],
+      borderBottomWidth: 1,
+      borderBottomColor: colors.borderLight,
+      marginBottom: spacing[3],
+    },
+    monthYearSelector: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceElevated,
+    },
+    monthYearText: {
+      fontSize: 15,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    navButtons: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    navBtn: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: colors.surfaceMuted,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    weekRow: {
+      flexDirection: 'row',
+      marginBottom: spacing[2],
+    },
+    weekCell: {
+      flex: 1,
+      alignItems: 'center',
+      paddingVertical: 4,
+    },
+    weekText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textMuted,
+      textTransform: 'uppercase',
+    },
+    daysContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    dayCell: {
+      width: '14.28%',
+      aspectRatio: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginVertical: 2,
+      borderRadius: radii.full,
+    },
+    todayCell: {
+      borderWidth: 1.5,
+      borderColor: colors.primary,
+    },
+    selectedDayCell: {
+      backgroundColor: colors.primary,
+    },
+    dayText: {
+      fontSize: 14,
+      color: colors.text,
+      fontWeight: '500',
+    },
+    todayText: {
+      color: colors.primary,
+      fontWeight: '700',
+    },
+    selectedDayText: {
+      color: '#FFFFFF',
+      fontWeight: '700',
+    },
+    quickBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginTop: spacing[3],
+      paddingTop: spacing[2],
+      borderTopWidth: 1,
+      borderTopColor: colors.borderLight,
+    },
+    quickBtn: {
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+    },
+    quickBtnText: {
+      fontSize: 12,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    yearPickerContainer: {
+      height: 220,
+      paddingVertical: spacing[2],
+    },
+    yearPickerLabel: {
+      fontSize: 12,
+      color: colors.textMuted,
+      fontWeight: '600',
+      marginBottom: spacing[2],
+    },
+    yearScroll: {
+      flex: 1,
+    },
+    yearGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      paddingBottom: 10,
+    },
+    yearChip: {
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: radii.md,
+      backgroundColor: colors.surfaceMuted,
+    },
+    yearChipSelected: {
+      backgroundColor: colors.primary,
+    },
+    yearChipText: {
+      fontSize: 13,
+      color: colors.text,
+      fontWeight: '600',
+    },
+    yearChipTextSelected: {
+      color: '#FFFFFF',
+    },
+    actions: {
+      flexDirection: 'row',
+      gap: spacing[3],
+      marginTop: spacing[4],
+    },
+  });

@@ -6,7 +6,7 @@ import {
   StyleSheet,
   ViewStyle,
 } from 'react-native';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useTheme } from '../../theme';
 import { Icon } from './Icon';
 
 interface SearchFieldProps {
@@ -28,15 +28,26 @@ export const SearchField: React.FC<SearchFieldProps> = ({
   hasActiveFilters = false,
   style,
 }) => {
+  const { colors } = useTheme();
+
   return (
-    <View style={[styles.container, style]}>
+    <View
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.inputBg,
+          borderColor: colors.border,
+        },
+        style,
+      ]}
+    >
       <Icon name="search" size={18} color={colors.textSecondary} style={styles.searchIcon} />
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={colors.textMuted}
-        style={styles.input}
+        placeholderTextColor={colors.placeholder}
+        style={[styles.input, { color: colors.text }]}
         returnKeyType="search"
         autoCapitalize="none"
         autoCorrect={false}
@@ -78,9 +89,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radii.md,
     paddingHorizontal: spacing[3],
     height: 44,
@@ -92,14 +101,12 @@ const styles = StyleSheet.create({
     flex: 1,
     ...typography.body,
     paddingVertical: 0,
-    color: colors.text,
   },
   actionBtn: {
     padding: spacing[1],
     marginLeft: spacing[1],
   },
   activeFilterBtn: {
-    backgroundColor: colors.primarySoft,
-    borderRadius: radii.sm,
+    opacity: 1,
   },
 });

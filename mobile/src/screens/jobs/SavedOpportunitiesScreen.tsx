@@ -2,7 +2,7 @@ import React from 'react';
 import { View, FlatList, StyleSheet } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
-import { colors } from '../../theme';
+import { useThemedStyles, ColorPalette } from '../../theme';
 import { AppHeader } from '../../components/common/AppHeader';
 import { OpportunityListItem } from '../../components/opportunity/OpportunityListItem';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -12,6 +12,7 @@ import { useOpportunityStore } from '../../store/opportunityStore';
 type Props = NativeStackScreenProps<RootStackParamList, 'SavedOpportunities'>;
 
 export const SavedOpportunitiesScreen: React.FC<Props> = ({ navigation }) => {
+  const { styles } = useThemedStyles(createStyles);
   const { bookmarkedOpportunityIds } = usePreferencesStore();
   const { opportunities } = useOpportunityStore();
 
@@ -54,9 +55,10 @@ export const SavedOpportunitiesScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+  });

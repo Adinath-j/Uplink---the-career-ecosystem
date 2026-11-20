@@ -9,7 +9,7 @@ import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MainTabParamList, RootStackParamList } from '../../types/navigation';
-import { colors, spacing } from '../../theme';
+import { spacing, useThemedStyles, ColorPalette } from '../../theme';
 import { AppHeader } from '../../components/common/AppHeader';
 import { SearchField } from '../../components/common/SearchField';
 import { FilterChips } from '../../components/common/FilterChips';
@@ -35,6 +35,7 @@ const DOMAINS = [
 ];
 
 export const MentorsScreen: React.FC<Props> = ({ navigation }) => {
+  const { styles, colors } = useThemedStyles(createStyles);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const {
@@ -60,10 +61,6 @@ export const MentorsScreen: React.FC<Props> = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {/* 
-        Mentors Header:
-        Title: Find Mentors on the same row as header actions
-      */}
       <AppHeader
         title="Find Mentors"
         onBookmarkPress={() => navigation.navigate('SavedOpportunities')}
@@ -99,7 +96,7 @@ export const MentorsScreen: React.FC<Props> = ({ navigation }) => {
           title="No Mentors Found"
           description="Try broadening your domain filter or search term to discover more mentors."
           icon="users"
-          actionLabel="View All Mentors"
+          actionLabel="Clear Filter"
           onActionPress={() => {
             setSelectedDomain('All');
             setSearchQuery('');
@@ -121,9 +118,7 @@ export const MentorsScreen: React.FC<Props> = ({ navigation }) => {
             <MentorListItem
               mentor={item}
               onPress={() =>
-                navigation.navigate('MentorDetail', {
-                  mentorId: item.id,
-                })
+                navigation.navigate('MentorDetail', { mentorId: item.id })
               }
               onBookPress={() =>
                 navigation.navigate('BookingRequest', {
@@ -141,21 +136,22 @@ export const MentorsScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  searchSection: {
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[3],
-    paddingBottom: spacing[1],
-  },
-  domainsRow: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  listContent: {
-    flexGrow: 1,
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    searchSection: {
+      paddingHorizontal: spacing[4],
+      paddingTop: spacing[3],
+      paddingBottom: spacing[1],
+    },
+    domainsRow: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    listContent: {
+      flexGrow: 1,
+    },
+  });

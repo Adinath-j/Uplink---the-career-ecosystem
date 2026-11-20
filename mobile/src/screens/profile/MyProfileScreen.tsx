@@ -15,7 +15,9 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography } from '../../theme';
+import { useTheme, useThemedStyles } from '../../theme/ThemeContext';
+import { ColorPalette } from '../../theme/colors';
 import { AppHeader } from '../../components/common/AppHeader';
 import { Avatar } from '../../components/common/Avatar';
 import { ProfileSection } from '../../components/profile/ProfileSection';
@@ -29,12 +31,27 @@ import { DatePickerInput } from '../../components/common/DatePickerInput';
 import { useProfileStore } from '../../store/profileStore';
 import { useAuthStore } from '../../store/authStore';
 import { Project, Experience, Certification } from '../../types/models';
+import {
+  validateSkillName,
+  validateSkillCategory,
+  validateProjectTitle,
+  validateProjectDescription,
+  validateUrl,
+  validateExperienceRole,
+  validateExperienceCompany,
+  validateDateOrder,
+  validateCertificationName,
+  validateCertificationIssuer,
+} from '../../utils/validation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'MyProfile'>;
 
 type ModalType = 'SKILL' | 'PROJECT' | 'EXPERIENCE' | 'CERTIFICATION' | null;
 
 export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   const {
     profile,
     isLoading,
@@ -54,7 +71,7 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
     deleteCertification,
   } = useProfileStore();
 
-  const { signOut } = useAuthStore();
+  const { user, signOut } = useAuthStore();
 
   // Active Modal State
   const [activeModal, setActiveModal] = useState<ModalType>(null);
@@ -131,10 +148,14 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSaveSkill = async () => {
-    if (!skillName.trim()) {
-      Alert.alert('Validation Error', 'Please enter a skill name.');
+    const nameErr = validateSkillName(skillName);
+    const catErr = validateSkillCategory(skillCategory);
+
+    if (nameErr || catErr) {
+      Alert.alert('Validation Error', nameErr || catErr || 'Invalid skill details.');
       return;
     }
+
     const success = await addSkill({
       skillName: skillName.trim(),
       proficiency: skillProficiency,
@@ -191,8 +212,16 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSaveProject = async () => {
-    if (!projTitle.trim()) {
-      Alert.alert('Validation Error', 'Project title is required.');
+    const titleErr = validateProjectTitle(projTitle);
+    const descErr = validateProjectDescription(projDescription);
+    const githubErr = validateUrl(projGithubUrl, 'GitHub URL', false);
+    const liveErr = validateUrl(projLiveUrl, 'Live Demo URL', false);
+
+    if (titleErr || descErr || githubErr || liveErr) {
+      Alert.alert(
+        'Validation Error',
+        titleErr || descErr || githubErr || liveErr || 'Invalid project details.'
+      );
       return;
     }
 
@@ -266,16 +295,20 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSaveExperience = async () => {
-    if (!expTitle.trim() || !expCompany.trim()) {
-      Alert.alert('Validation Error', 'Role title and company name are required.');
+    const roleErr = validateExperienceRole(expTitle);
+    const compErr = validateExperienceCompany(expCompany);
+
+    if (roleErr || compErr) {
+      Alert.alert('Validation Error', roleErr || compErr || 'Role and company are required.');
       return;
     }
 
     const formattedStartDate = expStartDate.trim() || new Date().toISOString().split('T')[0];
     const formattedEndDate = expIsCurrent ? undefined : (expEndDate.trim() || undefined);
 
-    if (formattedEndDate && formattedStartDate && formattedEndDate < formattedStartDate) {
-      Alert.alert('Validation Error', 'End date cannot be earlier than start date.');
+    const dateErr = validateDateOrder(formattedStartDate, formattedEndDate);
+    if (dateErr) {
+      Alert.alert('Validation Error', dateErr);
       return;
     }
 
@@ -344,8 +377,15 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleSaveCertification = async () => {
-    if (!certName.trim() || !certIssuer.trim()) {
-      Alert.alert('Validation Error', 'Certification name and issuing organization are required.');
+    const nameErr = validateCertificationName(certName);
+    const issuerErr = validateCertificationIssuer(certIssuer);
+    const credErr = validateUrl(certCredentialUrl, 'Credential URL', false);
+
+    if (nameErr || issuerErr || credErr) {
+      Alert.alert(
+        'Validation Error',
+        nameErr || issuerErr || credErr || 'Invalid certification details.'
+      );
       return;
     }
 
@@ -423,7 +463,7 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
               accessibilityRole="button"
               accessibilityLabel="Open settings"
             >
-              <Icon name="settings" size={20} color={colors.text} />
+              <Icon name="settings" size={20} color={colors.textPrimary} />
             </TouchableOpacity>
 
             <SecondaryButton
@@ -439,18 +479,21 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
       <ScrollView contentContainerStyle={styles.content}>
         {/* Profile Card Header */}
         <View style={styles.headerCard}>
-          <Avatar
-            name={profile.fullName}
-            imageUrl={profile.avatarUrl}
-            size={68}
-          />
+          <TouchableOpacity
+            onPress={() => navigation.navigate('EditProfile')}
+            activeOpacity={0.8}
+            accessibilityLabel="Edit profile picture"
+          >
+            <Avatar
+              name={profile.fullName}
+              imageUrl={profile.avatarUrl}
+              size={68}
+            />
+          </TouchableOpacity>
 
           <View style={styles.headerInfo}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text style={styles.name}>{profile.fullName}</Text>
-              {profile.isVerified ? (
-                <Icon name="check-circle" size={16} color="#10B981" />
-              ) : null}
             </View>
             <Text style={styles.institution}>{profile.institution}</Text>
             <Text style={styles.department}>
@@ -459,6 +502,26 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
             <Text style={styles.gradYear}>
               Class of {profile.graduationYear}
             </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+              <Text style={{ ...typography.bodySmall, color: colors.textSecondary }}>
+                {user?.email || profile.email || ''}
+              </Text>
+              {(user?.isVerified ?? profile.isVerified) ? (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.success + '1A', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 12 }}>
+                  <Icon name="check-circle" size={12} color={colors.success} />
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: colors.success }}>Verified</Text>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  onPress={() => (user?.email || profile.email) && navigation.navigate('VerifyEmail', { email: user?.email || profile.email || '' })}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: colors.warning + '1A', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 12 }}
+                  activeOpacity={0.7}
+                >
+                  <Icon name="shield-check" size={12} color={colors.warning} />
+                  <Text style={{ fontSize: 11, fontWeight: '600', color: colors.warning }}>Verify Now &rarr;</Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
 
@@ -605,7 +668,7 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       accessibilityLabel="Delete project"
                     >
-                      <Icon name="trash" size={15} color="#EF4444" />
+                      <Icon name="trash" size={15} color={colors.danger} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -673,7 +736,7 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       accessibilityLabel="Delete experience"
                     >
-                      <Icon name="trash" size={15} color="#EF4444" />
+                      <Icon name="trash" size={15} color={colors.danger} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -727,7 +790,7 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       accessibilityLabel="Delete certification"
                     >
-                      <Icon name="trash" size={15} color="#EF4444" />
+                      <Icon name="trash" size={15} color={colors.danger} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -1062,7 +1125,7 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
                 <Switch
                   value={expIsCurrent}
                   onValueChange={setExpIsCurrent}
-                  trackColor={{ false: '#E5E7EB', true: colors.primary }}
+                  trackColor={{ false: colors.border, true: colors.primary }}
                   thumbColor="#FFFFFF"
                 />
               </View>
@@ -1233,408 +1296,411 @@ export const MyProfileScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    paddingBottom: spacing[8],
-  },
-  headerRightActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  headerIconBtn: {
-    padding: 6,
-    borderRadius: radii.sm,
-    backgroundColor: '#F3F4F6',
-  },
-  headerCard: {
-    flexDirection: 'row',
-    padding: spacing[4],
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerInfo: {
-    marginLeft: spacing[4],
-    flex: 1,
-  },
-  name: {
-    ...typography.screenTitle,
-    fontSize: 18,
-    marginBottom: 2,
-  },
-  institution: {
-    ...typography.bodySmall,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  department: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  gradYear: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  bioBox: {
-    backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  bioText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  quickNavRow: {
-    flexDirection: 'row',
-    padding: spacing[3],
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    justifyContent: 'space-around',
-  },
-  navBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-  },
-  navBtnText: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  infoGrid: {
-    gap: spacing[2],
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 4,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  infoLabel: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  infoVal: {
-    ...typography.bodySmall,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  skillsWrapper: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[2],
-  },
-  skillPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.surfaceMuted,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    borderRadius: radii.full,
-  },
-  skillText: {
-    ...typography.bodySmall,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  skillDeleteBtn: {
-    padding: 2,
-    marginLeft: 2,
-  },
-  emptyCard: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[4],
-    backgroundColor: '#FAFAFA',
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderStyle: 'dashed',
-  },
-  emptyText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: spacing[2],
-  },
-  emptyAddBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radii.sm,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  emptyAddText: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  testLinkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: spacing[3],
-    paddingTop: spacing[2],
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  testLinkText: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  itemCard: {
-    backgroundColor: colors.surface,
-    padding: spacing[3],
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing[3],
-  },
-  itemHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  itemTitle: {
-    ...typography.cardTitle,
-    fontSize: 15,
-    flex: 1,
-    color: colors.text,
-  },
-  actionIconRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginLeft: spacing[2],
-  },
-  iconBtn: {
-    padding: 4,
-    borderRadius: radii.sm,
-    backgroundColor: '#F3F4F6',
-  },
-  itemSub: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: 6,
-  },
-  itemDesc: {
-    ...typography.bodySmall,
-    color: colors.textMuted,
-    lineHeight: 18,
-    marginTop: 2,
-  },
-  techRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginTop: spacing[2],
-  },
-  techChip: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radii.sm,
-  },
-  techText: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  linkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: spacing[2],
-  },
-  linkText: {
-    fontSize: 11,
-    color: colors.primary,
-    flex: 1,
-  },
-  bulletRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing[2],
-    marginBottom: spacing[2],
-  },
-  bulletDot: {
-    color: colors.primary,
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  bulletText: {
-    ...typography.bodySmall,
-    color: colors.text,
-    flex: 1,
-    lineHeight: 18,
-  },
-  settingsNavBox: {
-    marginHorizontal: spacing[4],
-    marginTop: spacing[4],
-  },
-  settingsRowBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: spacing[3],
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  settingsRowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-  },
-  settingsIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#EFF6FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  settingsRowTitle: {
-    ...typography.body,
-    fontWeight: '600',
-    color: colors.text,
-    fontSize: 14,
-  },
-  settingsRowSubtitle: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  signOutBox: {
-    marginTop: spacing[4],
-    paddingHorizontal: spacing[4],
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalDismissArea: {
-    flex: 1,
-  },
-  modalCard: {
-    maxHeight: Platform.OS === 'ios' ? '88%' : '90%',
-    width: '100%',
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
-    paddingHorizontal: spacing[5],
-    paddingTop: spacing[5],
-    paddingBottom: Platform.OS === 'ios' ? spacing[6] : spacing[4],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  modalScrollContent: {
-    paddingBottom: spacing[4],
-    flexGrow: 0,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing[4],
-    paddingBottom: spacing[2],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  modalTitle: {
-    ...typography.h3,
-    fontSize: 18,
-    color: colors.text,
-  },
-  fieldLabel: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.textSecondary,
-    marginBottom: 6,
-    marginTop: spacing[2],
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[3],
-    fontSize: 14,
-    color: colors.text,
-    backgroundColor: colors.background,
-  },
-  textArea: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  levelRow: {
-    flexDirection: 'row',
-    gap: spacing[2],
-  },
-  levelPill: {
-    flex: 1,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderRadius: radii.sm,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  levelPillActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  levelPillText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: colors.textSecondary,
-  },
-  levelPillTextActive: {
-    color: '#FFFFFF',
-  },
-  switchInlineRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginVertical: spacing[2],
-    paddingVertical: 4,
-  },
-  switchLabel: {
-    ...typography.bodySmall,
-    fontWeight: '500',
-    color: colors.text,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    gap: spacing[3],
-    marginTop: spacing[4],
-    paddingTop: spacing[3],
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      paddingBottom: spacing[8],
+    },
+    headerRightActions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    headerIconBtn: {
+      padding: 6,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surfaceElevated,
+    },
+    headerCard: {
+      flexDirection: 'row',
+      padding: spacing[4],
+      alignItems: 'center',
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      backgroundColor: colors.surface,
+    },
+    headerInfo: {
+      marginLeft: spacing[4],
+      flex: 1,
+    },
+    name: {
+      ...typography.screenTitle,
+      fontSize: 18,
+      marginBottom: 2,
+      color: colors.textPrimary,
+    },
+    institution: {
+      ...typography.bodySmall,
+      color: colors.textPrimary,
+      fontWeight: '500',
+    },
+    department: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    gradYear: {
+      ...typography.caption,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    bioBox: {
+      backgroundColor: colors.surfaceElevated,
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    bioText: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      lineHeight: 18,
+    },
+    quickNavRow: {
+      flexDirection: 'row',
+      padding: spacing[3],
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      justifyContent: 'space-around',
+    },
+    navBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: 6,
+      paddingHorizontal: 8,
+    },
+    navBtnText: {
+      ...typography.caption,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    infoGrid: {
+      gap: spacing[2],
+    },
+    infoRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      paddingVertical: 4,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.divider,
+    },
+    infoLabel: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+    },
+    infoVal: {
+      ...typography.bodySmall,
+      color: colors.textPrimary,
+      fontWeight: '500',
+    },
+    skillsWrapper: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing[2],
+    },
+    skillPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+      borderRadius: radii.full,
+    },
+    skillText: {
+      ...typography.bodySmall,
+      color: colors.textPrimary,
+      fontWeight: '500',
+    },
+    skillDeleteBtn: {
+      padding: 2,
+      marginLeft: 2,
+    },
+    emptyCard: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: spacing[4],
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
+    },
+    emptyText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginBottom: spacing[2],
+    },
+    emptyAddBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: radii.sm,
+      backgroundColor: colors.primarySoft,
+      borderWidth: 1,
+      borderColor: colors.primary,
+    },
+    emptyAddText: {
+      ...typography.caption,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    testLinkRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      marginTop: spacing[3],
+      paddingTop: spacing[2],
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    testLinkText: {
+      ...typography.caption,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    itemCard: {
+      backgroundColor: colors.surface,
+      padding: spacing[3],
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: spacing[3],
+    },
+    itemHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
+    itemTitle: {
+      ...typography.cardTitle,
+      fontSize: 15,
+      flex: 1,
+      color: colors.textPrimary,
+    },
+    actionIconRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      marginLeft: spacing[2],
+    },
+    iconBtn: {
+      padding: 4,
+      borderRadius: radii.sm,
+      backgroundColor: colors.surfaceElevated,
+    },
+    itemSub: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginBottom: 6,
+    },
+    itemDesc: {
+      ...typography.bodySmall,
+      color: colors.textMuted,
+      lineHeight: 18,
+      marginTop: 2,
+    },
+    techRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 4,
+      marginTop: spacing[2],
+    },
+    techChip: {
+      backgroundColor: colors.surfaceElevated,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: radii.sm,
+    },
+    techText: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    linkRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      marginTop: spacing[2],
+    },
+    linkText: {
+      fontSize: 11,
+      color: colors.primary,
+      flex: 1,
+    },
+    bulletRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: spacing[2],
+      marginBottom: spacing[2],
+    },
+    bulletDot: {
+      color: colors.primary,
+      fontSize: 14,
+      lineHeight: 18,
+    },
+    bulletText: {
+      ...typography.bodySmall,
+      color: colors.textPrimary,
+      flex: 1,
+      lineHeight: 18,
+    },
+    settingsNavBox: {
+      marginHorizontal: spacing[4],
+      marginTop: spacing[4],
+    },
+    settingsRowBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: spacing[3],
+      backgroundColor: colors.surface,
+      borderRadius: radii.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    settingsRowLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[3],
+    },
+    settingsIconCircle: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.primarySoft,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    settingsRowTitle: {
+      ...typography.body,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      fontSize: 14,
+    },
+    settingsRowSubtitle: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    signOutBox: {
+      marginTop: spacing[4],
+      paddingHorizontal: spacing[4],
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      justifyContent: 'flex-end',
+    },
+    modalDismissArea: {
+      flex: 1,
+    },
+    modalCard: {
+      maxHeight: Platform.OS === 'ios' ? '88%' : '90%',
+      width: '100%',
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: radii.xl,
+      borderTopRightRadius: radii.xl,
+      paddingHorizontal: spacing[5],
+      paddingTop: spacing[5],
+      paddingBottom: Platform.OS === 'ios' ? spacing[6] : spacing[4],
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: -4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 12,
+      elevation: 10,
+    },
+    modalScrollContent: {
+      paddingBottom: spacing[4],
+      flexGrow: 0,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing[4],
+      paddingBottom: spacing[2],
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    modalTitle: {
+      ...typography.h3,
+      fontSize: 18,
+      color: colors.textPrimary,
+    },
+    fieldLabel: {
+      ...typography.caption,
+      fontWeight: '600',
+      color: colors.textSecondary,
+      marginBottom: 6,
+      marginTop: spacing[2],
+    },
+    input: {
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[3],
+      fontSize: 14,
+      color: colors.textPrimary,
+      backgroundColor: colors.inputBg,
+    },
+    textArea: {
+      minHeight: 80,
+      textAlignVertical: 'top',
+    },
+    levelRow: {
+      flexDirection: 'row',
+      gap: spacing[2],
+    },
+    levelPill: {
+      flex: 1,
+      paddingVertical: 8,
+      alignItems: 'center',
+      borderRadius: radii.sm,
+      backgroundColor: colors.surfaceElevated,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    levelPillActive: {
+      backgroundColor: colors.primary,
+      borderColor: colors.primary,
+    },
+    levelPillText: {
+      fontSize: 12,
+      fontWeight: '600',
+      color: colors.textSecondary,
+    },
+    levelPillTextActive: {
+      color: '#FFFFFF',
+    },
+    switchInlineRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginVertical: spacing[2],
+      paddingVertical: 4,
+    },
+    switchLabel: {
+      ...typography.bodySmall,
+      fontWeight: '500',
+      color: colors.textPrimary,
+    },
+    modalActions: {
+      flexDirection: 'row',
+      gap: spacing[3],
+      marginTop: spacing[4],
+      paddingTop: spacing[3],
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+  });

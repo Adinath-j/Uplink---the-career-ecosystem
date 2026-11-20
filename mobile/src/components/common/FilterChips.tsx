@@ -6,7 +6,7 @@ import {
   StyleSheet,
   ViewStyle,
 } from 'react-native';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useTheme } from '../../theme';
 
 interface FilterChipItem<T extends string> {
   id: T;
@@ -27,6 +27,8 @@ export function FilterChips<T extends string>({
   onSelect,
   style,
 }: FilterChipsProps<T>) {
+  const { colors } = useTheme();
+
   return (
     <ScrollView
       horizontal
@@ -45,14 +47,31 @@ export function FilterChips<T extends string>({
             onPress={() => onSelect(id)}
             accessibilityRole="button"
             accessibilityState={{ selected: isSelected }}
-            style={[styles.chip, isSelected && styles.chipSelected]}
+            style={[
+              styles.chip,
+              {
+                backgroundColor: isSelected ? colors.primarySoft : colors.surfaceMuted,
+                borderColor: isSelected ? colors.primary : colors.border,
+              },
+            ]}
             activeOpacity={0.7}
           >
-            <Text style={[styles.label, isSelected && styles.labelSelected]}>
+            <Text
+              style={[
+                styles.label,
+                { color: isSelected ? colors.primary : colors.textSecondary },
+                isSelected && styles.labelSelected,
+              ]}
+            >
               {label}
             </Text>
             {count !== undefined && (
-              <Text style={[styles.count, isSelected && styles.countSelected]}>
+              <Text
+                style={[
+                  styles.count,
+                  { color: isSelected ? colors.primary : colors.textMuted },
+                ]}
+              >
                 {count}
               </Text>
             )}
@@ -75,31 +94,19 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[1] + 2,
     paddingHorizontal: spacing[3],
     borderRadius: radii.sm,
-    backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  chipSelected: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primary,
-  },
   label: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
     fontWeight: '500',
   },
   labelSelected: {
-    color: colors.primary,
     fontWeight: '600',
   },
   count: {
     ...typography.caption,
-    color: colors.textMuted,
     marginLeft: spacing[1],
-  },
-  countSelected: {
-    color: colors.primary,
   },
 });

@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useTheme } from '../../theme';
 import { Icon, IconName } from './Icon';
 import { SecondaryButton } from './SecondaryButton';
 
@@ -21,13 +21,23 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   onActionPress,
   style,
 }) => {
+  const { colors } = useTheme();
+
   return (
     <View style={[styles.container, style]}>
-      <View style={styles.iconContainer}>
+      <View
+        style={[
+          styles.iconContainer,
+          {
+            backgroundColor: colors.surfaceMuted,
+            borderColor: colors.border,
+          },
+        ]}
+      >
         <Icon name={icon} size={32} color={colors.textSecondary} />
       </View>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.description}>{description}</Text>
+      <Text style={[styles.title, { color: colors.text }]}>{title}</Text>
+      <Text style={[styles.description, { color: colors.textSecondary }]}>{description}</Text>
       {actionLabel && onActionPress && (
         <SecondaryButton
           label={actionLabel}
@@ -51,22 +61,18 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing[3],
   },
   title: {
     ...typography.cardTitle,
-    color: colors.text,
     textAlign: 'center',
     marginBottom: spacing[1],
   },
   description: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
     textAlign: 'center',
     lineHeight: 18,
     maxWidth: 280,

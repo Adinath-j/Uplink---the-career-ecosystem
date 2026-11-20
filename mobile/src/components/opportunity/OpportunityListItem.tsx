@@ -7,7 +7,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Opportunity } from '../../types/models';
-import { colors, spacing, typography } from '../../theme';
+import { spacing, typography, useThemedStyles, ColorPalette } from '../../theme';
 import { Icon } from '../common/Icon';
 import { StatusBadge } from '../common/StatusBadge';
 import { usePreferencesStore } from '../../store/preferencesStore';
@@ -23,6 +23,7 @@ export const OpportunityListItem: React.FC<OpportunityListItemProps> = ({
   onPress,
   style,
 }) => {
+  const { styles, colors } = useThemedStyles(createStyles);
   const { isBookmarked, toggleBookmark } = usePreferencesStore();
   const bookmarked = isBookmarked(opportunity.id);
 
@@ -98,70 +99,71 @@ export const OpportunityListItem: React.FC<OpportunityListItemProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.surface,
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  topRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing[1],
-  },
-  badgeGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[2],
-  },
-  workModeText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  verifiedTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    marginLeft: spacing[1],
-  },
-  verifiedText: {
-    ...typography.caption,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  bookmarkBtn: {
-    padding: spacing[1],
-  },
-  title: {
-    ...typography.cardTitle,
-    color: colors.text,
-    marginBottom: 2,
-  },
-  organization: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing[2],
-  },
-  footerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  compensation: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  deadlineContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  deadlineText: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: colors.surface,
+      paddingVertical: spacing[3],
+      paddingHorizontal: spacing[4],
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    topRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing[1],
+    },
+    badgeGroup: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[2],
+    },
+    workModeText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    verifiedTag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+      marginLeft: spacing[1],
+    },
+    verifiedText: {
+      ...typography.caption,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    bookmarkBtn: {
+      padding: spacing[1],
+    },
+    title: {
+      ...typography.cardTitle,
+      color: colors.text,
+      marginBottom: 2,
+    },
+    organization: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      marginBottom: spacing[2],
+    },
+    footerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    compensation: {
+      ...typography.caption,
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    deadlineContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    deadlineText: {
+      ...typography.caption,
+      color: colors.textMuted,
+    },
+  });

@@ -11,10 +11,15 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
 import { QATopic } from '../../types/models';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useThemedStyles, ColorPalette } from '../../theme';
 import { AppHeader } from '../../components/common/AppHeader';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { useQAStore } from '../../store/qaStore';
+import {
+  validateQuestionTitle,
+  validateQuestionDescription,
+  validateQuestionTopics,
+} from '../../utils/validation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'AskQuestion'>;
 
@@ -31,14 +36,19 @@ const AVAILABLE_TOPICS: QATopic[] = [
 ];
 
 export const AskQuestionScreen: React.FC<Props> = ({ navigation }) => {
+  const { styles, colors } = useThemedStyles(createStyles);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [selectedTopics, setSelectedTopics] = useState<string[]>([]);
+  const [errors, setErrors] = useState<{ title?: string; description?: string; topics?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { askQuestion } = useQAStore();
 
   const toggleTopic = (topic: string) => {
+    if (errors.topics) {
+      setErrors((prev) => ({ ...prev, topics: undefined }));
+    }
     if (selectedTopics.includes(topic)) {
       setSelectedTopics(selectedTopics.filter((t) => t !== topic));
     } else {
@@ -51,16 +61,20 @@ export const AskQuestionScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handlePost = async () => {
-    if (!title.trim() || !description.trim()) {
-      Alert.alert('Validation Error', 'Please provide both a title and description.');
+    const titleErr = validateQuestionTitle(title);
+    const descErr = validateQuestionDescription(description);
+    const topicsErr = validateQuestionTopics(selectedTopics);
+
+    if (titleErr || descErr || topicsErr) {
+      setErrors({
+        title: titleErr || undefined,
+        description: descErr || undefined,
+        topics: topicsErr || undefined,
+      });
       return;
     }
 
-    if (selectedTopics.length === 0) {
-      Alert.alert('Topic Required', 'Please select at least one topic tag.');
-      return;
-    }
-
+    setErrors({});
     setIsSubmitting(true);
     const success = await askQuestion({
       title: title.trim(),
@@ -91,11 +105,15 @@ export const AskQuestionScreen: React.FC<Props> = ({ navigation }) => {
           </Text>
           <TextInput
             value={title}
-            onChangeText={setTitle}
+            onChangeText={(text) => {
+              setTitle(text);
+              if (errors.title) setErrors((prev) => ({ ...prev, title: undefined }));
+            }}
             placeholder="e.g. How to handle database migrations in Spring Boot without downtime?"
-            placeholderTextColor={colors.textMuted}
-            style={styles.input}
+            placeholderTextColor={colors.placeholder}
+            style={[styles.input, errors.title ? styles.inputError : null]}
           />
+          {errors.title ? <Text style={styles.fieldError}>{errors.title}</Text> : null}
         </View>
 
         <View style={styles.field}>
@@ -105,17 +123,22 @@ export const AskQuestionScreen: React.FC<Props> = ({ navigation }) => {
           </Text>
           <TextInput
             value={description}
-            onChangeText={setDescription}
+            onChangeText={(text) => {
+              setDescription(text);
+              if (errors.description) setErrors((prev) => ({ ...prev, description: undefined }));
+            }}
             placeholder="Describe your technical problem or question in detail..."
-            placeholderTextColor={colors.textMuted}
+            placeholderTextColor={colors.placeholder}
             multiline
             numberOfLines={6}
-            style={[styles.input, styles.textArea]}
+            style={[styles.input, styles.textArea, errors.description ? styles.inputError : null]}
           />
+          {errors.description ? <Text style={styles.fieldError}>{errors.description}</Text> : null}
         </View>
 
         <View style={styles.field}>
           <Text style={styles.label}>Topic Tags (Select up to 5)</Text>
+          {errors.topics ? <Text style={[styles.fieldError, { marginBottom: spacing[2] }]}>{errors.topics}</Text> : null}
           <View style={styles.topicsGrid}>
             {AVAILABLE_TOPICS.map((topic) => {
               const isSelected = selectedTopics.includes(topic);
@@ -156,67 +179,79 @@ export const AskQuestionScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  content: {
-    padding: spacing[4],
-  },
-  field: {
-    marginBottom: spacing[5],
-  },
-  label: {
-    ...typography.label,
-    marginBottom: 2,
-  },
-  helper: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: spacing[2],
-  },
-  input: {
-    ...typography.body,
-    backgroundColor: colors.surfaceMuted,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.md,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    color: colors.text,
-  },
-  textArea: {
-    minHeight: 120,
-    textAlignVertical: 'top',
-  },
-  topicsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[2],
-  },
-  topicChip: {
-    backgroundColor: colors.surfaceMuted,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[1],
-  },
-  topicChipSelected: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primary,
-  },
-  topicText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  topicTextSelected: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  submitBtn: {
-    marginTop: spacing[2],
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    content: {
+      padding: spacing[4],
+    },
+    field: {
+      marginBottom: spacing[5],
+    },
+    label: {
+      ...typography.label,
+      color: colors.text,
+      marginBottom: 2,
+    },
+    helper: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginBottom: spacing[2],
+    },
+    input: {
+      ...typography.body,
+      backgroundColor: colors.inputBg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.md,
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+      color: colors.text,
+    },
+    inputError: {
+      borderColor: colors.danger,
+      borderWidth: 1.5,
+    },
+    fieldError: {
+      ...typography.caption,
+      color: colors.danger,
+      marginTop: 4,
+      marginLeft: 2,
+    },
+    textArea: {
+      minHeight: 120,
+      textAlignVertical: 'top',
+    },
+    topicsGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing[2],
+    },
+    topicChip: {
+      backgroundColor: colors.surfaceMuted,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.sm,
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[1],
+    },
+    topicChipSelected: {
+      backgroundColor: colors.primarySoft,
+      borderColor: colors.primary,
+    },
+    topicText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    topicTextSelected: {
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    submitBtn: {
+      marginTop: spacing[2],
+    },
+  });

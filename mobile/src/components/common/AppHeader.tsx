@@ -7,7 +7,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors, spacing, typography } from '../../theme';
+import { colors, spacing, typography, useTheme } from '../../theme';
 import { Icon } from './Icon';
 import { Avatar } from './Avatar';
 import { useAuthStore } from '../../store/authStore';
@@ -35,6 +35,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
   style,
 }) => {
   const insets = useSafeAreaInsets();
+  const { colors: themeColors } = useTheme();
   const { user } = useAuthStore();
   const { bookmarkedOpportunityIds } = usePreferencesStore();
   const hasBookmarks = bookmarkedOpportunityIds.length > 0;
@@ -43,7 +44,11 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     <View
       style={[
         styles.wrapper,
-        { paddingTop: Math.max(insets.top, spacing[2]) },
+        {
+          backgroundColor: themeColors.surface,
+          borderBottomColor: themeColors.border,
+          paddingTop: Math.max(insets.top, spacing[2]),
+        },
         style,
       ]}
     >
@@ -57,12 +62,12 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               style={styles.backButton}
             >
-              <Icon name="arrow-left" size={22} color={colors.text} />
+              <Icon name="arrow-left" size={22} color={themeColors.text} />
             </TouchableOpacity>
           )}
 
           {title ? (
-            <Text style={styles.title} numberOfLines={1}>
+            <Text style={[styles.title, { color: themeColors.text }]} numberOfLines={1}>
               {title}
             </Text>
           ) : (
@@ -87,7 +92,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   <Icon
                     name={hasBookmarks ? 'bookmark-fill' : 'bookmark'}
                     size={20}
-                    color={hasBookmarks ? colors.primary : colors.text}
+                    color={hasBookmarks ? themeColors.primary : themeColors.text}
                   />
                 </TouchableOpacity>
               )}
@@ -100,7 +105,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={styles.actionBtn}
                 >
-                  <Icon name="bell-dot" size={20} color={colors.text} />
+                  <Icon name="bell-dot" size={20} color={themeColors.text} />
                 </TouchableOpacity>
               )}
 
@@ -112,7 +117,7 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={styles.actionBtn}
                 >
-                  <Icon name="message-square" size={20} color={colors.text} />
+                  <Icon name="message-square" size={20} color={themeColors.text} />
                 </TouchableOpacity>
               )}
 

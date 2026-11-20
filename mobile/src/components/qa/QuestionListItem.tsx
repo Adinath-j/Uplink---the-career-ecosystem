@@ -7,7 +7,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Question } from '../../types/models';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useThemedStyles, ColorPalette } from '../../theme';
 import { SameDoubtButton } from './SameDoubtButton';
 import { Icon } from '../common/Icon';
 import { useQAStore } from '../../store/qaStore';
@@ -23,6 +23,7 @@ export const QuestionListItem: React.FC<QuestionListItemProps> = ({
   onPress,
   style,
 }) => {
+  const { styles, colors } = useThemedStyles(createStyles);
   const { toggleSameDoubt } = useQAStore();
 
   const formatTimestamp = (dateStr: string) => {
@@ -88,80 +89,81 @@ export const QuestionListItem: React.FC<QuestionListItemProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.surface,
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  authorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing[1],
-    flexWrap: 'wrap',
-    gap: 4,
-  },
-  authorName: {
-    ...typography.caption,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  authorContext: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  timestamp: {
-    ...typography.caption,
-    color: colors.textMuted,
-  },
-  title: {
-    ...typography.cardTitle,
-    color: colors.text,
-    marginBottom: 4,
-    lineHeight: 20,
-  },
-  preview: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing[2],
-    lineHeight: 18,
-  },
-  topicsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginBottom: spacing[2],
-  },
-  topicBadge: {
-    backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: radii.sm,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  topicText: {
-    ...typography.caption,
-    fontSize: 11,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: spacing[1],
-  },
-  answerCount: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  answerCountText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: colors.surface,
+      paddingVertical: spacing[3],
+      paddingHorizontal: spacing[4],
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    authorRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: spacing[1],
+      flexWrap: 'wrap',
+      gap: 4,
+    },
+    authorName: {
+      ...typography.caption,
+      fontWeight: '600',
+      color: colors.text,
+    },
+    authorContext: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    timestamp: {
+      ...typography.caption,
+      color: colors.textMuted,
+    },
+    title: {
+      ...typography.cardTitle,
+      color: colors.text,
+      marginBottom: 4,
+      lineHeight: 20,
+    },
+    preview: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      marginBottom: spacing[2],
+      lineHeight: 18,
+    },
+    topicsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 6,
+      marginBottom: spacing[2],
+    },
+    topicBadge: {
+      backgroundColor: colors.surfaceMuted,
+      paddingHorizontal: 8,
+      paddingVertical: 2,
+      borderRadius: radii.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    topicText: {
+      ...typography.caption,
+      fontSize: 11,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    actionsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: spacing[1],
+    },
+    answerCount: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    answerCountText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+  });

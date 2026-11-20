@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useTheme } from '../../theme';
 import { Icon } from './Icon';
 import { SecondaryButton } from './SecondaryButton';
 
@@ -15,13 +15,15 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   onRetry,
   style,
 }) => {
+  const { colors } = useTheme();
+
   return (
     <View style={[styles.container, style]}>
-      <View style={styles.iconContainer}>
+      <View style={[styles.iconContainer, { backgroundColor: colors.dangerSoft }]}>
         <Icon name="help-circle" size={30} color={colors.danger} />
       </View>
-      <Text style={styles.title}>Unable to Load Data</Text>
-      <Text style={styles.description}>{message}</Text>
+      <Text style={[styles.title, { color: colors.text }]}>Unable to Load Data</Text>
+      <Text style={[styles.description, { color: colors.textSecondary }]}>{message}</Text>
       {onRetry && (
         <SecondaryButton
           label="Try Again"
@@ -45,20 +47,17 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: colors.dangerSoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing[3],
   },
   title: {
     ...typography.cardTitle,
-    color: colors.text,
     textAlign: 'center',
     marginBottom: spacing[1],
   },
   description: {
     ...typography.bodySmall,
-    color: colors.textSecondary,
     textAlign: 'center',
     maxWidth: 280,
   },

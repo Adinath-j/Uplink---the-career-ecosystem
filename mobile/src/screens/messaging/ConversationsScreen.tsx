@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,9 +10,12 @@ import {
   TextInput,
   ActivityIndicator,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography } from '../../theme';
+import { useTheme, useThemedStyles } from '../../theme/ThemeContext';
+import { ColorPalette } from '../../theme/colors';
 import { AppHeader } from '../../components/common/AppHeader';
 import { Avatar } from '../../components/common/Avatar';
 import { Icon } from '../../components/common/Icon';
@@ -26,6 +29,9 @@ import { BackendConversation, UserSearchResult } from '../../services/messagingS
 type Props = NativeStackScreenProps<RootStackParamList, 'Conversations'>;
 
 export const ConversationsScreen: React.FC<Props> = ({ navigation }) => {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   const {
     conversations,
     isLoadingConversations,
@@ -44,34 +50,73 @@ export const ConversationsScreen: React.FC<Props> = ({ navigation }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
   const [isStartingChat, setIsStartingChat] = useState(false);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    initSocket();
-    fetchConversations();
-  }, [fetchConversations, initSocket]);
+  useFocusEffect(
+    useCallback(() => {
+      initSocket();
+      fetchConversations();
+
+      // Background sync every 8 seconds while on Conversations screen
+      const pollTimer = setInterval(() => {
+        fetchConversations();
+      }, 8000);
+
+      return () => {
+        clearInterval(pollTimer);
+      };
+    }, [fetchConversations, initSocket])
+  );
 
   const onRefresh = useCallback(async () => {
     await fetchConversations();
   }, [fetchConversations]);
 
-  const handleSearchTextChange = async (text: string) => {
-    setSearchQuery(text);
-    if (!text.trim()) {
-      setSearchResults([]);
-      setIsSearching(false);
-      return;
-    }
-
+  const openNewChatModal = useCallback(async () => {
+    setIsModalOpen(true);
+    setSearchQuery('');
     setIsSearching(true);
     try {
-      const results = await searchPeers(text.trim());
+      const results = await searchPeers('');
       setSearchResults(results);
     } catch {
       setSearchResults([]);
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [searchPeers]);
+
+  const handleSearchTextChange = useCallback(
+    (text: string) => {
+      setSearchQuery(text);
+
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+
+      if (!text.trim()) {
+        setIsSearching(true);
+        searchPeers('')
+          .then((res) => setSearchResults(res))
+          .catch(() => setSearchResults([]))
+          .finally(() => setIsSearching(false));
+        return;
+      }
+
+      setIsSearching(true);
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const results = await searchPeers(text.trim());
+          setSearchResults(results);
+        } catch {
+          setSearchResults([]);
+        } finally {
+          setIsSearching(false);
+        }
+      }, 250);
+    },
+    [searchPeers]
+  );
 
   const handleSelectPeer = async (peer: UserSearchResult) => {
     if (isStartingChat) return;
@@ -173,7 +218,7 @@ export const ConversationsScreen: React.FC<Props> = ({ navigation }) => {
         rightAction={
           <TouchableOpacity
             style={styles.newChatBtn}
-            onPress={() => setIsModalOpen(true)}
+            onPress={openNewChatModal}
             accessibilityRole="button"
             accessibilityLabel="New Chat"
           >
@@ -193,7 +238,7 @@ export const ConversationsScreen: React.FC<Props> = ({ navigation }) => {
           description="Connect with mentors, recruiters, and peers to start direct messaging."
           icon="message-square"
           actionLabel="Start a Chat"
-          onActionPress={() => setIsModalOpen(true)}
+          onActionPress={openNewChatModal}
         />
       ) : (
         <FlatList
@@ -239,7 +284,7 @@ export const ConversationsScreen: React.FC<Props> = ({ navigation }) => {
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search peers by name or email..."
-                placeholderTextColor={colors.textSecondary}
+                placeholderTextColor={colors.textMuted}
                 value={searchQuery}
                 onChangeText={handleSearchTextChange}
                 autoFocus
@@ -252,25 +297,42 @@ export const ConversationsScreen: React.FC<Props> = ({ navigation }) => {
                 <ActivityIndicator size="large" color={colors.primary} />
                 <Text style={styles.loadingText}>Opening conversation...</Text>
               </View>
+            ) : isSearching && searchResults.length === 0 ? (
+              <View style={styles.loadingCenter}>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.loadingText}>Finding campus peers...</Text>
+              </View>
             ) : searchResults.length > 0 ? (
-              <FlatList
-                data={searchResults}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.searchResultsList}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.peerResultItem}
-                    onPress={() => handleSelectPeer(item)}
-                  >
-                    <Avatar name={item.fullName} size={40} />
-                    <View style={styles.peerInfo}>
-                      <Text style={styles.peerName}>{item.fullName}</Text>
-                      <Text style={styles.peerEmail}>{item.email}</Text>
-                    </View>
-                    <Icon name="message-square" size={18} color={colors.primary} />
-                  </TouchableOpacity>
-                )}
-              />
+              <>
+                {!searchQuery.trim() ? (
+                  <Text style={styles.sectionSubtitle}>Campus Members & Mentors</Text>
+                ) : null}
+                <FlatList
+                  data={searchResults}
+                  keyExtractor={(item) => item.id}
+                  contentContainerStyle={styles.searchResultsList}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.peerResultItem}
+                      onPress={() => handleSelectPeer(item)}
+                    >
+                      <Avatar name={item.fullName} size={40} />
+                      <View style={styles.peerInfo}>
+                        <View style={styles.peerHeader}>
+                          <Text style={styles.peerName}>{item.fullName}</Text>
+                          {item.role ? (
+                            <View style={styles.roleBadge}>
+                              <Text style={styles.roleBadgeText}>{item.role}</Text>
+                            </View>
+                          ) : null}
+                        </View>
+                        <Text style={styles.peerEmail}>{item.email}</Text>
+                      </View>
+                      <Icon name="message-square" size={18} color={colors.primary} />
+                    </TouchableOpacity>
+                  )}
+                />
+              </>
             ) : searchQuery.trim().length > 0 && !isSearching ? (
               <View style={styles.emptySearch}>
                 <Text style={styles.emptySearchText}>No campus peers found matching "{searchQuery}"</Text>
@@ -289,198 +351,225 @@ export const ConversationsScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  listContent: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 10,
-  },
-  unreadCard: {
-    borderColor: '#93C5FD',
-    backgroundColor: '#F0F7FF',
-  },
-  cardContent: {
-    flex: 1,
-    marginLeft: spacing[3],
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  cardTitle: {
-    ...typography.cardTitle,
-    fontSize: 15,
-    color: colors.text,
-    flex: 1,
-    marginRight: spacing[2],
-  },
-  boldTitle: {
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  cardTime: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontSize: 12,
-  },
-  unreadTime: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  cardPreview: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    fontSize: 13,
-    flex: 1,
-  },
-  unreadPreview: {
-    color: colors.text,
-    fontWeight: '600',
-  },
-  unreadBadge: {
-    backgroundColor: colors.primary,
-    borderRadius: radii.full,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    marginLeft: 8,
-    minWidth: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  unreadBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  newChatBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: radii.full,
-    gap: 4,
-  },
-  newChatBtnText: {
-    ...typography.caption,
-    color: '#FFFFFF',
-    fontWeight: '600',
-    fontSize: 12,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: colors.surface,
-    borderTopLeftRadius: radii.xl,
-    borderTopRightRadius: radii.xl,
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[4],
-    paddingBottom: spacing[8],
-    maxHeight: '80%',
-    minHeight: 350,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing[3],
-  },
-  modalTitle: {
-    ...typography.cardTitle,
-    fontSize: 18,
-    color: colors.text,
-  },
-  modalCloseBtn: {
-    padding: 4,
-  },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    borderRadius: radii.lg,
-    paddingHorizontal: spacing[3],
-    paddingVertical: 10,
-    gap: 8,
-    marginBottom: spacing[3],
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: colors.text,
-    padding: 0,
-  },
-  searchResultsList: {
-    paddingVertical: spacing[1],
-  },
-  peerResultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  peerInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  peerName: {
-    ...typography.body,
-    fontWeight: '600',
-    color: colors.text,
-    fontSize: 15,
-  },
-  peerEmail: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontSize: 12,
-  },
-  emptySearch: {
-    paddingVertical: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptySearchText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    textAlign: 'center',
-  },
-  emptySearchHint: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    paddingHorizontal: 20,
-  },
-  loadingCenter: {
-    paddingVertical: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  loadingText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    listContent: {
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+    },
+    card: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 14,
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: 10,
+    },
+    unreadCard: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primarySoft,
+    },
+    cardContent: {
+      flex: 1,
+      marginLeft: spacing[3],
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 4,
+    },
+    cardTitle: {
+      ...typography.cardTitle,
+      fontSize: 15,
+      color: colors.textPrimary,
+      flex: 1,
+      marginRight: spacing[2],
+    },
+    boldTitle: {
+      fontWeight: '700',
+      color: colors.primary,
+    },
+    cardTime: {
+      ...typography.caption,
+      color: colors.textMuted,
+      fontSize: 12,
+    },
+    unreadTime: {
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    cardFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    cardPreview: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      fontSize: 13,
+      flex: 1,
+    },
+    unreadPreview: {
+      color: colors.textPrimary,
+      fontWeight: '600',
+    },
+    unreadBadge: {
+      backgroundColor: colors.primary,
+      borderRadius: radii.full,
+      paddingHorizontal: 7,
+      paddingVertical: 2,
+      marginLeft: 8,
+      minWidth: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    unreadBadgeText: {
+      color: '#FFFFFF',
+      fontSize: 11,
+      fontWeight: '700',
+    },
+    newChatBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: radii.full,
+      gap: 4,
+    },
+    newChatBtnText: {
+      ...typography.caption,
+      color: '#FFFFFF',
+      fontWeight: '600',
+      fontSize: 12,
+    },
+    modalOverlay: {
+      flex: 1,
+      backgroundColor: 'rgba(0, 0, 0, 0.6)',
+      justifyContent: 'flex-end',
+    },
+    modalContent: {
+      backgroundColor: colors.surface,
+      borderTopLeftRadius: radii.xl,
+      borderTopRightRadius: radii.xl,
+      paddingHorizontal: spacing[4],
+      paddingTop: spacing[4],
+      paddingBottom: spacing[8],
+      maxHeight: '80%',
+      minHeight: 350,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing[3],
+    },
+    modalTitle: {
+      ...typography.cardTitle,
+      fontSize: 18,
+      color: colors.textPrimary,
+    },
+    modalCloseBtn: {
+      padding: 4,
+    },
+    searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.inputBg,
+      borderRadius: radii.lg,
+      paddingHorizontal: spacing[3],
+      paddingVertical: 10,
+      gap: 8,
+      marginBottom: spacing[3],
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 15,
+      color: colors.textPrimary,
+      padding: 0,
+    },
+    searchResultsList: {
+      paddingVertical: spacing[1],
+    },
+    peerResultItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+    },
+    peerInfo: {
+      flex: 1,
+      marginLeft: 12,
+    },
+    peerHeader: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    peerName: {
+      ...typography.body,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      fontSize: 15,
+    },
+    roleBadge: {
+      backgroundColor: colors.primarySoft,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: radii.sm,
+    },
+    roleBadgeText: {
+      ...typography.caption,
+      color: colors.primary,
+      fontSize: 10,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+    },
+    sectionSubtitle: {
+      ...typography.caption,
+      color: colors.textMuted,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      paddingVertical: spacing[2],
+    },
+    peerEmail: {
+      ...typography.caption,
+      color: colors.textMuted,
+      fontSize: 12,
+    },
+    emptySearch: {
+      paddingVertical: 32,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptySearchText: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      textAlign: 'center',
+    },
+    emptySearchHint: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      textAlign: 'center',
+      paddingHorizontal: 20,
+    },
+    loadingCenter: {
+      paddingVertical: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 12,
+    },
+    loadingText: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+    },
+  });

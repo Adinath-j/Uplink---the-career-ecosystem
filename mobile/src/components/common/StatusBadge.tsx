@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useTheme } from '../../theme';
 
 export type StatusVariant =
   | 'default'
@@ -21,19 +21,41 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   variant = 'default',
   style,
 }) => {
+  const { colors, isDark } = useTheme();
+
   const getColors = () => {
     switch (variant) {
       case 'primary':
-        return { bg: colors.primarySoft, text: colors.primary, border: '#BFDBFE' };
+        return {
+          bg: colors.primarySoft,
+          text: colors.primary,
+          border: isDark ? 'rgba(59, 130, 246, 0.4)' : '#BFDBFE',
+        };
       case 'success':
-        return { bg: colors.successSoft, text: colors.success, border: '#BBF7D0' };
+        return {
+          bg: colors.successSoft,
+          text: colors.success,
+          border: isDark ? 'rgba(34, 197, 94, 0.4)' : '#BBF7D0',
+        };
       case 'warning':
-        return { bg: colors.warningSoft, text: colors.warning, border: '#FDE68A' };
+        return {
+          bg: colors.warningSoft,
+          text: colors.warning,
+          border: isDark ? 'rgba(245, 158, 11, 0.4)' : '#FDE68A',
+        };
       case 'danger':
-        return { bg: colors.dangerSoft, text: colors.danger, border: '#FECACA' };
+        return {
+          bg: colors.dangerSoft,
+          text: colors.danger,
+          border: isDark ? 'rgba(239, 68, 68, 0.4)' : '#FECACA',
+        };
       case 'neutral':
       default:
-        return { bg: colors.surfaceMuted, text: colors.textSecondary, border: colors.border };
+        return {
+          bg: colors.badgeBg,
+          text: colors.badgeText,
+          border: colors.border,
+        };
     }
   };
 

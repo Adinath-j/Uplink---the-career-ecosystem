@@ -2,13 +2,14 @@ import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
-import { colors } from '../../theme';
+import { useTheme } from '../../theme';
 import { usePreferencesStore } from '../../store/preferencesStore';
 import { useAuthStore } from '../../store/authStore';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Bootstrap'>;
 
 export const BootstrapScreen: React.FC<Props> = ({ navigation }) => {
+  const { colors } = useTheme();
   const { hydrate: hydratePreferences } = usePreferencesStore();
   const { hydrate: hydrateAuth } = useAuthStore();
 
@@ -29,8 +30,10 @@ export const BootstrapScreen: React.FC<Props> = ({ navigation }) => {
 
       if (!prefState.hasCompletedOnboarding) {
         navigation.replace('Onboarding');
-      } else if (authState.isAuthenticated) {
+      } else if (authState.isAuthenticated && authState.user?.isVerified !== false) {
         navigation.replace('MainTabs', { screen: 'Home' });
+      } else if (authState.requiresVerification && authState.unverifiedEmail) {
+        navigation.replace('VerifyEmail', { email: authState.unverifiedEmail });
       } else {
         // If onboarding is complete but not authenticated, navigate to SignIn
         navigation.replace('SignIn');
@@ -45,7 +48,7 @@ export const BootstrapScreen: React.FC<Props> = ({ navigation }) => {
   }, [hydratePreferences, hydrateAuth, navigation]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ActivityIndicator size="small" color={colors.primary} />
     </View>
   );
@@ -54,7 +57,6 @@ export const BootstrapScreen: React.FC<Props> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
     alignItems: 'center',
     justifyContent: 'center',
   },

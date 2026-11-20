@@ -7,7 +7,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Opportunity } from '../../types/models';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useThemedStyles, ColorPalette } from '../../theme';
 import { StatusBadge } from '../common/StatusBadge';
 import { Icon } from '../common/Icon';
 
@@ -22,6 +22,8 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
   onPress,
   style,
 }) => {
+  const { styles, colors } = useThemedStyles(createStyles);
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -63,65 +65,66 @@ export const OpportunityCard: React.FC<OpportunityCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
-  card: {
-    width: 260,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radii.lg,
-    padding: spacing[3],
-    marginRight: spacing[3],
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing[2],
-  },
-  workMode: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  title: {
-    ...typography.cardTitle,
-    color: colors.text,
-    marginBottom: 2,
-    minHeight: 40,
-  },
-  org: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing[3],
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: spacing[2],
-    borderTopWidth: 1,
-    borderTopColor: colors.borderLight,
-  },
-  skillsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    flex: 1,
-  },
-  skillPill: {
-    backgroundColor: colors.surfaceMuted,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: radii.sm,
-  },
-  skillText: {
-    ...typography.caption,
-    fontSize: 10,
-    color: colors.textSecondary,
-  },
-  moreSkillsText: {
-    ...typography.caption,
-    fontSize: 10,
-    color: colors.textMuted,
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    card: {
+      width: 260,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: radii.lg,
+      padding: spacing[3],
+      marginRight: spacing[3],
+    },
+    headerRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing[2],
+    },
+    workMode: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    title: {
+      ...typography.cardTitle,
+      color: colors.text,
+      marginBottom: 2,
+      minHeight: 40,
+    },
+    org: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      marginBottom: spacing[3],
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingTop: spacing[2],
+      borderTopWidth: 1,
+      borderTopColor: colors.borderLight,
+    },
+    skillsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      flex: 1,
+    },
+    skillPill: {
+      backgroundColor: colors.surfaceMuted,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: radii.sm,
+    },
+    skillText: {
+      ...typography.caption,
+      fontSize: 10,
+      color: colors.textSecondary,
+    },
+    moreSkillsText: {
+      ...typography.caption,
+      fontSize: 10,
+      color: colors.textMuted,
+    },
+  });

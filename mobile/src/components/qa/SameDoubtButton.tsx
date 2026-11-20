@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useTheme } from '../../theme';
 import { Icon } from '../common/Icon';
 
 interface SameDoubtButtonProps {
@@ -16,6 +16,8 @@ export const SameDoubtButton: React.FC<SameDoubtButtonProps> = ({
   onPress,
   style,
 }) => {
+  const { colors } = useTheme();
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -23,14 +25,27 @@ export const SameDoubtButton: React.FC<SameDoubtButtonProps> = ({
       accessibilityRole="button"
       accessibilityLabel={`I have the same doubt, currently ${count} students`}
       accessibilityState={{ selected: hasUserMarked }}
-      style={[styles.button, hasUserMarked && styles.buttonActive, style]}
+      style={[
+        styles.button,
+        {
+          backgroundColor: hasUserMarked ? colors.primarySoft : colors.surfaceMuted,
+          borderColor: hasUserMarked ? colors.primary : colors.border,
+        },
+        style,
+      ]}
     >
       <Icon
         name="help-circle"
         size={14}
         color={hasUserMarked ? colors.primary : colors.textSecondary}
       />
-      <Text style={[styles.text, hasUserMarked && styles.textActive]}>
+      <Text
+        style={[
+          styles.text,
+          { color: hasUserMarked ? colors.primary : colors.textSecondary },
+          hasUserMarked && styles.textActive,
+        ]}
+      >
         Same Doubt {count > 0 ? `(${count})` : ''}
       </Text>
     </TouchableOpacity>
@@ -44,22 +59,14 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[1] + 1,
     paddingHorizontal: spacing[2] + 2,
     borderRadius: radii.sm,
-    backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: colors.border,
     gap: 4,
-  },
-  buttonActive: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primary,
   },
   text: {
     ...typography.caption,
-    color: colors.textSecondary,
     fontWeight: '500',
   },
   textActive: {
-    color: colors.primary,
     fontWeight: '600',
   },
 });

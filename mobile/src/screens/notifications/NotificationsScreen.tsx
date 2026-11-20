@@ -10,7 +10,9 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
 import { InAppNotification } from '../../types/models';
-import { colors, spacing, typography } from '../../theme';
+import { spacing, typography } from '../../theme';
+import { useTheme, useThemedStyles } from '../../theme/ThemeContext';
+import { ColorPalette } from '../../theme/colors';
 import { AppHeader } from '../../components/common/AppHeader';
 import { SecondaryButton } from '../../components/common/SecondaryButton';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -21,6 +23,8 @@ import { notificationService } from '../../services/notificationService';
 type Props = NativeStackScreenProps<RootStackParamList, 'Notifications'>;
 
 export const NotificationsScreen: React.FC<Props> = ({ navigation }) => {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -139,67 +143,68 @@ export const NotificationsScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  listContent: {
-    paddingVertical: spacing[2],
-  },
-  item: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-    backgroundColor: colors.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    alignItems: 'flex-start',
-  },
-  itemUnread: {
-    backgroundColor: colors.primarySoft,
-  },
-  iconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing[3],
-  },
-  iconCircleUnread: {
-    backgroundColor: colors.primarySoft,
-  },
-  itemContent: {
-    flex: 1,
-  },
-  itemTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 2,
-  },
-  itemTitle: {
-    ...typography.bodySmall,
-    fontWeight: '500',
-    color: colors.text,
-    flex: 1,
-  },
-  itemTitleUnread: {
-    fontWeight: '700',
-    color: colors.text,
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary,
-    marginLeft: spacing[2],
-  },
-  itemMessage: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    listContent: {
+      paddingVertical: spacing[2],
+    },
+    item: {
+      flexDirection: 'row',
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+      backgroundColor: colors.surface,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      alignItems: 'flex-start',
+    },
+    itemUnread: {
+      backgroundColor: colors.primarySoft,
+    },
+    iconCircle: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.surfaceElevated,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: spacing[3],
+    },
+    iconCircleUnread: {
+      backgroundColor: colors.primarySoft,
+    },
+    itemContent: {
+      flex: 1,
+    },
+    itemTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 2,
+    },
+    itemTitle: {
+      ...typography.bodySmall,
+      fontWeight: '500',
+      color: colors.textPrimary,
+      flex: 1,
+    },
+    itemTitleUnread: {
+      fontWeight: '700',
+      color: colors.textPrimary,
+    },
+    unreadDot: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.primary,
+      marginLeft: spacing[2],
+    },
+    itemMessage: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      lineHeight: 18,
+    },
+  });

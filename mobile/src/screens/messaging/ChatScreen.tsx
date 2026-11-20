@@ -15,7 +15,9 @@ import {
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '../../types/navigation';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography } from '../../theme';
+import { useTheme, useThemedStyles } from '../../theme/ThemeContext';
+import { ColorPalette } from '../../theme/colors';
 import { AppHeader } from '../../components/common/AppHeader';
 import { Icon } from '../../components/common/Icon';
 import { LoadingState } from '../../components/common/LoadingState';
@@ -23,10 +25,13 @@ import { ErrorState } from '../../components/common/ErrorState';
 import { useMessagingStore } from '../../store/messagingStore';
 import { useAuthStore } from '../../store/authStore';
 import { BackendMessage } from '../../services/messagingService';
+import { validateChatMessage } from '../../utils/validation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Chat'>;
 
 export const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { colors, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { conversationId, title } = route.params;
   const insets = useSafeAreaInsets();
   const [inputText, setInputText] = useState('');
@@ -105,7 +110,8 @@ export const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   };
 
   const handleSend = async () => {
-    if (!inputText.trim() || isSending) return;
+    const error = validateChatMessage(inputText);
+    if (error || isSending) return;
     const textToSend = inputText.trim();
     setInputText('');
 
@@ -273,7 +279,7 @@ export const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
         <TextInput
           style={styles.textInput}
           placeholder="Type a message..."
-          placeholderTextColor={colors.textSecondary}
+          placeholderTextColor={colors.textMuted}
           value={inputText}
           onChangeText={handleTextChange}
           multiline
@@ -300,190 +306,191 @@ export const ChatScreen: React.FC<Props> = ({ route, navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  messageList: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-  },
-  messageRow: {
-    marginVertical: 4,
-    flexDirection: 'row',
-  },
-  myMessageRow: {
-    justifyContent: 'flex-end',
-  },
-  theirMessageRow: {
-    justifyContent: 'flex-start',
-  },
-  bubble: {
-    maxWidth: '78%',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: radii.lg,
-  },
-  myBubble: {
-    backgroundColor: colors.primary,
-    borderBottomRightRadius: 2,
-  },
-  pendingBubble: {
-    opacity: 0.82,
-  },
-  theirBubble: {
-    backgroundColor: '#F3F4F6',
-    borderBottomLeftRadius: 2,
-  },
-  senderName: {
-    ...typography.caption,
-    fontWeight: '700',
-    color: colors.primary,
-    marginBottom: 2,
-    fontSize: 11,
-  },
-  messageText: {
-    ...typography.body,
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  myMessageText: {
-    color: '#FFFFFF',
-  },
-  theirMessageText: {
-    color: colors.text,
-  },
-  bubbleFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginTop: 4,
-    gap: 4,
-  },
-  timeText: {
-    ...typography.caption,
-    fontSize: 10,
-  },
-  myTimeText: {
-    color: 'rgba(255, 255, 255, 0.75)',
-  },
-  theirTimeText: {
-    color: colors.textSecondary,
-  },
-  statusIndicator: {
-    marginLeft: 2,
-  },
-  pendingText: {
-    fontSize: 9,
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontStyle: 'italic',
-  },
-  failedText: {
-    fontSize: 9,
-    color: '#FCA5A5',
-    fontWeight: '700',
-  },
-  sentText: {
-    fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.7)',
-  },
-  readText: {
-    fontSize: 10,
-    color: '#93C5FD',
-    fontWeight: 'bold',
-  },
-  typingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[4],
-    paddingVertical: 6,
-    backgroundColor: '#F8FAFC',
-    borderTopWidth: 1,
-    borderTopColor: '#E2E8F0',
-    gap: 6,
-  },
-  typingDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.primary,
-  },
-  typingText: {
-    ...typography.caption,
-    fontSize: 12,
-    color: colors.primary,
-    fontStyle: 'italic',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  textInput: {
-    flex: 1,
-    minHeight: 40,
-    maxHeight: 100,
-    backgroundColor: '#F9FAFB',
-    borderRadius: radii.full,
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    fontSize: 15,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: spacing[2],
-  },
-  sendButtonDisabled: {
-    backgroundColor: '#93C5FD',
-  },
-  connectionStatusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radii.full,
-    backgroundColor: '#F1F5F9',
-    gap: 5,
-  },
-  statusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-  },
-  statusDotLive: {
-    backgroundColor: '#10B981',
-  },
-  statusDotReconnecting: {
-    backgroundColor: '#F59E0B',
-  },
-  statusDotOffline: {
-    backgroundColor: '#94A3B8',
-  },
-  statusText: {
-    ...typography.caption,
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  statusTextLive: {
-    color: '#059669',
-  },
-  statusTextReconnecting: {
-    color: '#D97706',
-  },
-  statusTextOffline: {
-    color: '#64748B',
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    messageList: {
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+    },
+    messageRow: {
+      marginVertical: 4,
+      flexDirection: 'row',
+    },
+    myMessageRow: {
+      justifyContent: 'flex-end',
+    },
+    theirMessageRow: {
+      justifyContent: 'flex-start',
+    },
+    bubble: {
+      maxWidth: '78%',
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: radii.lg,
+    },
+    myBubble: {
+      backgroundColor: colors.bubbleSent,
+      borderBottomRightRadius: 2,
+    },
+    pendingBubble: {
+      opacity: 0.82,
+    },
+    theirBubble: {
+      backgroundColor: colors.bubbleReceived,
+      borderBottomLeftRadius: 2,
+    },
+    senderName: {
+      ...typography.caption,
+      fontWeight: '700',
+      color: colors.primary,
+      marginBottom: 2,
+      fontSize: 11,
+    },
+    messageText: {
+      ...typography.body,
+      fontSize: 15,
+      lineHeight: 20,
+    },
+    myMessageText: {
+      color: colors.bubbleSentText,
+    },
+    theirMessageText: {
+      color: colors.bubbleReceivedText,
+    },
+    bubbleFooter: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      marginTop: 4,
+      gap: 4,
+    },
+    timeText: {
+      ...typography.caption,
+      fontSize: 10,
+    },
+    myTimeText: {
+      color: 'rgba(255, 255, 255, 0.75)',
+    },
+    theirTimeText: {
+      color: colors.textMuted,
+    },
+    statusIndicator: {
+      marginLeft: 2,
+    },
+    pendingText: {
+      fontSize: 9,
+      color: 'rgba(255, 255, 255, 0.7)',
+      fontStyle: 'italic',
+    },
+    failedText: {
+      fontSize: 9,
+      color: colors.danger,
+      fontWeight: '700',
+    },
+    sentText: {
+      fontSize: 10,
+      color: 'rgba(255, 255, 255, 0.7)',
+    },
+    readText: {
+      fontSize: 10,
+      color: '#93C5FD',
+      fontWeight: 'bold',
+    },
+    typingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing[4],
+      paddingVertical: 6,
+      backgroundColor: colors.surfaceElevated,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      gap: 6,
+    },
+    typingDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.primary,
+    },
+    typingText: {
+      ...typography.caption,
+      fontSize: 12,
+      color: colors.primary,
+      fontStyle: 'italic',
+    },
+    inputContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing[3],
+      paddingVertical: spacing[2],
+      backgroundColor: colors.surface,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    textInput: {
+      flex: 1,
+      minHeight: 40,
+      maxHeight: 100,
+      backgroundColor: colors.inputBg,
+      borderRadius: radii.full,
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[2],
+      fontSize: 15,
+      color: colors.textPrimary,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    sendButton: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.primary,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginLeft: spacing[2],
+    },
+    sendButtonDisabled: {
+      opacity: 0.5,
+    },
+    connectionStatusPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: radii.full,
+      backgroundColor: colors.surfaceElevated,
+      gap: 5,
+    },
+    statusDot: {
+      width: 7,
+      height: 7,
+      borderRadius: 3.5,
+    },
+    statusDotLive: {
+      backgroundColor: colors.success,
+    },
+    statusDotReconnecting: {
+      backgroundColor: colors.warning,
+    },
+    statusDotOffline: {
+      backgroundColor: colors.textMuted,
+    },
+    statusText: {
+      ...typography.caption,
+      fontSize: 11,
+      fontWeight: '600',
+    },
+    statusTextLive: {
+      color: colors.success,
+    },
+    statusTextReconnecting: {
+      color: colors.warning,
+    },
+    statusTextOffline: {
+      color: colors.textMuted,
+    },
+  });

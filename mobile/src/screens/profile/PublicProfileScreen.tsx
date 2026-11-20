@@ -18,7 +18,9 @@ import { StatusBadge } from '../../components/common/StatusBadge';
 import { Icon } from '../../components/common/Icon';
 import { LoadingState } from '../../components/common/LoadingState';
 import { ErrorState } from '../../components/common/ErrorState';
-import { colors, typography, spacing, radii } from '../../theme';
+import { typography, spacing, radii } from '../../theme';
+import { useTheme, useThemedStyles } from '../../theme/ThemeContext';
+import { ColorPalette } from '../../theme/colors';
 import { StudentProfile } from '../../types/models';
 import { profileService } from '../../services/profileService';
 import { useMessagingStore } from '../../store/messagingStore';
@@ -27,6 +29,8 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 type PublicProfileRouteProp = RouteProp<RootStackParamList, 'PublicProfile'>;
 
 export const PublicProfileScreen: React.FC = () => {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<PublicProfileRouteProp>();
   const { userId, fullName: initialName } = route.params;
@@ -158,7 +162,6 @@ export const PublicProfileScreen: React.FC = () => {
             <View style={styles.heroInfo}>
               <View style={styles.nameHeaderRow}>
                 <Text style={styles.fullNameText}>{profile?.fullName}</Text>
-                <StatusBadge label="VERIFIED" variant="success" />
               </View>
               <Text style={styles.institutionText}>{profile?.institution}</Text>
               <Text style={styles.departmentText}>
@@ -290,177 +293,178 @@ export const PublicProfileScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  headerChatBtn: {
-    padding: spacing[1],
-  },
-  scrollContent: {
-    padding: spacing[4],
-    paddingBottom: spacing[8],
-  },
-  heroCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing[4],
-  },
-  heroTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[4],
-  },
-  heroInfo: {
-    flex: 1,
-  },
-  nameHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 2,
-  },
-  fullNameText: {
-    ...typography.screenTitle,
-    fontSize: 18,
-    color: colors.text,
-  },
-  institutionText: {
-    ...typography.bodySmall,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  departmentText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  gradText: {
-    ...typography.caption,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  bioContainer: {
-    marginTop: spacing[3],
-    paddingTop: spacing[3],
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  bioText: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  primaryMessageBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    backgroundColor: colors.primary,
-    borderRadius: radii.md,
-    paddingVertical: spacing[3],
-    marginTop: spacing[4],
-  },
-  primaryMessageBtnDisabled: {
-    opacity: 0.7,
-  },
-  primaryMessageBtnText: {
-    ...typography.label,
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  sectionCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    padding: spacing[4],
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing[3],
-  },
-  sectionTitle: {
-    ...typography.h3,
-    fontSize: 15,
-    color: colors.text,
-    marginBottom: spacing[3],
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 3,
-  },
-  infoLabel: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-  },
-  infoVal: {
-    ...typography.bodySmall,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  skillsWrapper: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[2],
-  },
-  skillPill: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: radii.full,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  skillText: {
-    ...typography.caption,
-    color: colors.text,
-    fontWeight: '600',
-  },
-  projectItem: {
-    paddingVertical: spacing[2],
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  itemTitle: {
-    ...typography.label,
-    fontSize: 14,
-    color: colors.text,
-    fontWeight: '700',
-  },
-  itemSub: {
-    ...typography.caption,
-    color: colors.primary,
-    marginVertical: 2,
-    fontWeight: '600',
-  },
-  itemDesc: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    lineHeight: 18,
-    marginTop: 2,
-  },
-  techWrapper: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 4,
-    marginTop: 6,
-  },
-  techTag: {
-    backgroundColor: '#EFF6FF',
-    borderRadius: radii.sm,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  techTagText: {
-    fontSize: 10,
-    color: colors.primary,
-    fontWeight: '600',
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    headerChatBtn: {
+      padding: spacing[1],
+    },
+    scrollContent: {
+      padding: spacing[4],
+      paddingBottom: spacing[8],
+    },
+    heroCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.md,
+      padding: spacing[4],
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: spacing[4],
+    },
+    heroTopRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing[4],
+    },
+    heroInfo: {
+      flex: 1,
+    },
+    nameHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 2,
+    },
+    fullNameText: {
+      ...typography.screenTitle,
+      fontSize: 18,
+      color: colors.textPrimary,
+    },
+    institutionText: {
+      ...typography.bodySmall,
+      color: colors.textPrimary,
+      fontWeight: '500',
+    },
+    departmentText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    gradText: {
+      ...typography.caption,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    bioContainer: {
+      marginTop: spacing[3],
+      paddingTop: spacing[3],
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+    },
+    bioText: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      lineHeight: 18,
+    },
+    primaryMessageBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: spacing[2],
+      backgroundColor: colors.primary,
+      borderRadius: radii.md,
+      paddingVertical: spacing[3],
+      marginTop: spacing[4],
+    },
+    primaryMessageBtnDisabled: {
+      opacity: 0.7,
+    },
+    primaryMessageBtnText: {
+      ...typography.label,
+      fontSize: 14,
+      color: '#FFFFFF',
+      fontWeight: '700',
+    },
+    sectionCard: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.md,
+      padding: spacing[4],
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: spacing[3],
+    },
+    sectionTitle: {
+      ...typography.h3,
+      fontSize: 15,
+      color: colors.textPrimary,
+      marginBottom: spacing[3],
+    },
+    infoRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingVertical: 3,
+    },
+    infoLabel: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+    },
+    infoVal: {
+      ...typography.bodySmall,
+      color: colors.textPrimary,
+      fontWeight: '600',
+    },
+    skillsWrapper: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: spacing[2],
+    },
+    skillPill: {
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: radii.full,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    skillText: {
+      ...typography.caption,
+      color: colors.textPrimary,
+      fontWeight: '600',
+    },
+    projectItem: {
+      paddingVertical: spacing[2],
+      borderBottomWidth: 1,
+      borderBottomColor: colors.divider,
+    },
+    itemTitle: {
+      ...typography.label,
+      fontSize: 14,
+      color: colors.textPrimary,
+      fontWeight: '700',
+    },
+    itemSub: {
+      ...typography.caption,
+      color: colors.primary,
+      marginVertical: 2,
+      fontWeight: '600',
+    },
+    itemDesc: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      lineHeight: 18,
+      marginTop: 2,
+    },
+    techWrapper: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 4,
+      marginTop: 6,
+    },
+    techTag: {
+      backgroundColor: colors.primarySoft,
+      borderRadius: radii.sm,
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderWidth: 1,
+      borderColor: colors.primary,
+    },
+    techTagText: {
+      fontSize: 10,
+      color: colors.primary,
+      fontWeight: '600',
+    },
+  });

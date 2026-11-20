@@ -21,10 +21,14 @@ interface AuthState {
   refreshToken: string | null;
   isLoading: boolean;
   error: string | null;
+  requiresVerification: boolean;
+  unverifiedEmail: string | null;
 
   hydrate: () => Promise<boolean>;
   signIn: (payload: SignInPayload) => Promise<boolean>;
   signUp: (payload: SignUpPayload) => Promise<boolean>;
+  verifyEmail: (email: string, otp: string) => Promise<{ success: boolean; error?: string }>;
+  resendVerification: (email: string) => Promise<{ success: boolean; error?: string }>;
   signOut: () => Promise<void>;
   clearError: () => void;
   // Demo helper to easily review student workflows without manual form typing
@@ -46,6 +50,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
     refreshToken: null,
     isLoading: false,
     error: null,
+    requiresVerification: false,
+    unverifiedEmail: null,
 
     /**
      * Restore session from persistent storage on application startup
@@ -69,6 +75,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
               role: liveDemoRes.data.role,
               token: liveDemoRes.data.token,
               refreshToken: liveDemoRes.data.refreshToken || null,
+              requiresVerification: false,
+              unverifiedEmail: null,
               error: null,
             });
             return true;
@@ -80,6 +88,21 @@ export const useAuthStore = create<AuthState>((set, get) => {
         }
 
         if (accessToken && session?.user) {
+          // Defense-in-depth: If persisted session has unverified email, strictly refuse login
+          if (session.user.isVerified === false) {
+            await tokenStorage.clearTokens();
+            set({
+              isAuthenticated: false,
+              isHydrated: true,
+              user: null,
+              token: null,
+              requiresVerification: true,
+              unverifiedEmail: session.user.email,
+              error: 'Please verify your email address before continuing.',
+            });
+            return false;
+          }
+
           apiClient.setAuthToken(accessToken, refreshToken || undefined);
 
           set({
@@ -89,6 +112,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
             role: session.role || 'STUDENT',
             token: accessToken,
             refreshToken: refreshToken || null,
+            requiresVerification: false,
+            unverifiedEmail: null,
             error: null,
           });
 
@@ -98,25 +123,20 @@ export const useAuthStore = create<AuthState>((set, get) => {
             .then((res) => {
               if (res.success && res.data) {
                 const remoteUser = res.data;
-                const updatedRole = normalizeUserRole(remoteUser.roles);
                 set((state) => ({
                   user: state.user
                     ? {
                         ...state.user,
-                        email: remoteUser.email,
-                        fullName: remoteUser.fullName,
-                        role: updatedRole,
+                        fullName: remoteUser.fullName || state.user.fullName,
+                        email: remoteUser.email || state.user.email,
+                        isVerified: remoteUser.isVerified ?? state.user.isVerified,
                       }
                     : null,
-                  role: updatedRole,
                 }));
-              } else if (res.statusCode === 401 || res.statusCode === 403) {
-                // If stored token was invalidated or expired, sign out cleanly
-                get().signOut();
               }
             })
             .catch(() => {
-              // Keep existing cached session if offline
+              // Fail silently in offline mode
             });
 
           return true;
@@ -132,7 +152,7 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
 
     signIn: async (payload: SignInPayload) => {
-      set({ isLoading: true, error: null });
+      set({ isLoading: true, error: null, requiresVerification: false, unverifiedEmail: null });
       try {
         const res = await authService.signIn(payload);
         if (res.success && res.data) {
@@ -142,12 +162,34 @@ export const useAuthStore = create<AuthState>((set, get) => {
             role: res.data.role,
             token: res.data.token,
             refreshToken: res.data.refreshToken || null,
+            requiresVerification: false,
+            unverifiedEmail: null,
             isLoading: false,
             error: null,
           });
           prefetchPostAuthData();
           return true;
         } else {
+          const isNotVerified =
+            res.code === 'EMAIL_NOT_VERIFIED' ||
+            (res.raw as any)?.code === 'EMAIL_NOT_VERIFIED' ||
+            (res.statusCode === 403 && (res.error?.toLowerCase().includes('verify') || (res.raw as any)?.message?.toLowerCase().includes('verify')));
+
+          if (isNotVerified) {
+            const targetEmail = (res.raw as any)?.email || payload.email.trim();
+            set({
+              isLoading: false,
+              isAuthenticated: false,
+              user: null,
+              token: null,
+              refreshToken: null,
+              requiresVerification: true,
+              unverifiedEmail: targetEmail,
+              error: res.error || 'Email verification required. A 6-digit code has been sent to your email.',
+            });
+            return false;
+          }
+
           set({
             isLoading: false,
             error: res.error || 'Authentication failed. Please check your credentials.',
@@ -164,16 +206,33 @@ export const useAuthStore = create<AuthState>((set, get) => {
     },
 
     signUp: async (payload: SignUpPayload) => {
-      set({ isLoading: true, error: null });
+      set({ isLoading: true, error: null, requiresVerification: false, unverifiedEmail: null });
       try {
         const res = await authService.signUp(payload);
         if (res.success && res.data) {
+          // If 6-digit OTP verification is required (token empty or requiresVerification set)
+          if (!res.data.token || (res.data.user && res.data.user.isVerified === false)) {
+            set({
+              isLoading: false,
+              isAuthenticated: false,
+              user: null,
+              token: null,
+              refreshToken: null,
+              requiresVerification: true,
+              unverifiedEmail: res.data.user?.email || payload.email.trim(),
+              error: null,
+            });
+            return true;
+          }
+
           set({
             isAuthenticated: true,
             user: res.data.user,
             role: res.data.role,
             token: res.data.token,
             refreshToken: res.data.refreshToken || null,
+            requiresVerification: false,
+            unverifiedEmail: null,
             isLoading: false,
             error: null,
           });
@@ -195,6 +254,63 @@ export const useAuthStore = create<AuthState>((set, get) => {
       }
     },
 
+    verifyEmail: async (email: string, otp: string) => {
+      set({ isLoading: true, error: null });
+      try {
+        const res = await authService.verifyEmail({ email: email.trim(), otp: otp.trim() });
+        if (res.success && res.data) {
+          set({
+            isAuthenticated: true,
+            user: res.data.user,
+            role: res.data.role,
+            token: res.data.token,
+            refreshToken: res.data.refreshToken || null,
+            requiresVerification: false,
+            unverifiedEmail: null,
+            isLoading: false,
+            error: null,
+          });
+          try {
+            websocketService.connect();
+          } catch {
+            // Non-critical socket connection
+          }
+          prefetchPostAuthData();
+          return { success: true };
+        } else {
+          const errMsg = res.error || 'Verification failed. Please check your 6-digit code.';
+          set({
+            isLoading: false,
+            error: errMsg,
+          });
+          return { success: false, error: errMsg };
+        }
+      } catch (e: any) {
+        const errMsg = e.message || 'An unexpected error occurred during verification.';
+        set({
+          isLoading: false,
+          error: errMsg,
+        });
+        return { success: false, error: errMsg };
+      }
+    },
+
+    resendVerification: async (email: string) => {
+      set({ isLoading: true, error: null });
+      try {
+        const res = await authService.resendVerification(email.trim());
+        set({ isLoading: false });
+        if (res.success) {
+          return { success: true };
+        } else {
+          return { success: false, error: res.error || 'Failed to resend verification code.' };
+        }
+      } catch (e: any) {
+        set({ isLoading: false });
+        return { success: false, error: e.message || 'Failed to resend verification code.' };
+      }
+    },
+
     signOut: async () => {
       try {
         websocketService.disconnect();
@@ -209,6 +325,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
         role: 'STUDENT',
         token: null,
         refreshToken: null,
+        requiresVerification: false,
+        unverifiedEmail: null,
         error: null,
       });
     },
@@ -226,6 +344,8 @@ export const useAuthStore = create<AuthState>((set, get) => {
             role: res.data.role,
             token: res.data.token,
             refreshToken: res.data.refreshToken || null,
+            requiresVerification: false,
+            unverifiedEmail: null,
             isLoading: false,
             error: null,
           });

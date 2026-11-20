@@ -9,7 +9,9 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography } from '../../theme';
+import { useTheme, useThemedStyles } from '../../theme/ThemeContext';
+import { ColorPalette } from '../../theme/colors';
 import { AppHeader } from '../../components/common/AppHeader';
 import { PrimaryButton } from '../../components/common/PrimaryButton';
 import { SecondaryButton } from '../../components/common/SecondaryButton';
@@ -22,6 +24,8 @@ import { useAssessmentStore } from '../../store/assessmentStore';
 type Props = NativeStackScreenProps<RootStackParamList, 'Quiz'>;
 
 export const QuizScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { colors, isDark } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { assessmentId, title } = route.params;
 
   const {
@@ -133,7 +137,15 @@ export const QuizScreen: React.FC<Props> = ({ route, navigation }) => {
             <View
               style={[
                 styles.resultIconWrap,
-                { backgroundColor: latestResult.passed ? '#DCFCE7' : '#FEF3C7' },
+                {
+                  backgroundColor: latestResult.passed
+                    ? isDark
+                      ? '#14532D'
+                      : '#DCFCE7'
+                    : isDark
+                    ? '#78350F'
+                    : '#FEF3C7',
+                },
               ]}
             >
               <Icon
@@ -286,169 +298,170 @@ export const QuizScreen: React.FC<Props> = ({ route, navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    padding: spacing[4],
-  },
-  progressRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing[2],
-  },
-  progressText: {
-    ...typography.label,
-    color: colors.primary,
-    fontSize: 13,
-  },
-  pointsText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '600',
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 3,
-    marginBottom: spacing[4],
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: 3,
-  },
-  questionCard: {
-    backgroundColor: colors.surface,
-    padding: spacing[4],
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing[4],
-  },
-  questionText: {
-    ...typography.body,
-    fontSize: 16,
-    lineHeight: 24,
-    color: colors.text,
-    fontWeight: '500',
-  },
-  optionsList: {
-    gap: 10,
-  },
-  optionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 14,
-    backgroundColor: colors.surface,
-    borderRadius: radii.md,
-    borderWidth: 1.5,
-    borderColor: colors.border,
-  },
-  optionCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: '#EFF6FF',
-  },
-  radioCircle: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing[3],
-  },
-  radioCircleSelected: {
-    borderColor: colors.primary,
-  },
-  radioDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.primary,
-  },
-  optionText: {
-    ...typography.body,
-    fontSize: 15,
-    color: colors.text,
-    flex: 1,
-  },
-  optionTextSelected: {
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  footer: {
-    flexDirection: 'row',
-    padding: spacing[4],
-    backgroundColor: colors.surface,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-  resultContainer: {
-    padding: spacing[5],
-    alignItems: 'center',
-  },
-  resultCard: {
-    width: '100%',
-    backgroundColor: colors.surface,
-    borderRadius: radii.xl,
-    padding: spacing[6],
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  resultIconWrap: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing[4],
-  },
-  resultTitle: {
-    ...typography.screenTitle,
-    fontSize: 20,
-    color: colors.text,
-    marginBottom: 4,
-  },
-  resultSub: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing[4],
-    textAlign: 'center',
-  },
-  scoreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    width: '100%',
-    paddingVertical: spacing[3],
-    marginVertical: spacing[3],
-    backgroundColor: '#F8FAFC',
-    borderRadius: radii.md,
-  },
-  scoreBox: {
-    alignItems: 'center',
-  },
-  scoreNumber: {
-    ...typography.screenTitle,
-    fontSize: 20,
-    color: colors.primary,
-  },
-  scoreLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  scoreDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: '#E2E8F0',
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      padding: spacing[4],
+    },
+    progressRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing[2],
+    },
+    progressText: {
+      ...typography.label,
+      color: colors.primary,
+      fontSize: 13,
+    },
+    pointsText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      fontWeight: '600',
+    },
+    progressBar: {
+      height: 6,
+      backgroundColor: colors.border,
+      borderRadius: 3,
+      marginBottom: spacing[4],
+      overflow: 'hidden',
+    },
+    progressFill: {
+      height: '100%',
+      backgroundColor: colors.primary,
+      borderRadius: 3,
+    },
+    questionCard: {
+      backgroundColor: colors.surface,
+      padding: spacing[4],
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: spacing[4],
+    },
+    questionText: {
+      ...typography.body,
+      fontSize: 16,
+      lineHeight: 24,
+      color: colors.textPrimary,
+      fontWeight: '500',
+    },
+    optionsList: {
+      gap: 10,
+    },
+    optionCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: 14,
+      backgroundColor: colors.surface,
+      borderRadius: radii.md,
+      borderWidth: 1.5,
+      borderColor: colors.border,
+    },
+    optionCardSelected: {
+      borderColor: colors.primary,
+      backgroundColor: colors.primarySoft,
+    },
+    radioCircle: {
+      width: 20,
+      height: 20,
+      borderRadius: 10,
+      borderWidth: 2,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: spacing[3],
+    },
+    radioCircleSelected: {
+      borderColor: colors.primary,
+    },
+    radioDot: {
+      width: 10,
+      height: 10,
+      borderRadius: 5,
+      backgroundColor: colors.primary,
+    },
+    optionText: {
+      ...typography.body,
+      fontSize: 15,
+      color: colors.textPrimary,
+      flex: 1,
+    },
+    optionTextSelected: {
+      fontWeight: '600',
+      color: colors.primary,
+    },
+    footer: {
+      flexDirection: 'row',
+      padding: spacing[4],
+      backgroundColor: colors.surface,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    resultContainer: {
+      padding: spacing[5],
+      alignItems: 'center',
+    },
+    resultCard: {
+      width: '100%',
+      backgroundColor: colors.surface,
+      borderRadius: radii.xl,
+      padding: spacing[6],
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    resultIconWrap: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: spacing[4],
+    },
+    resultTitle: {
+      ...typography.screenTitle,
+      fontSize: 20,
+      color: colors.textPrimary,
+      marginBottom: 4,
+    },
+    resultSub: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      marginBottom: spacing[4],
+      textAlign: 'center',
+    },
+    scoreRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-around',
+      width: '100%',
+      paddingVertical: spacing[3],
+      marginVertical: spacing[3],
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: radii.md,
+    },
+    scoreBox: {
+      alignItems: 'center',
+    },
+    scoreNumber: {
+      ...typography.screenTitle,
+      fontSize: 20,
+      color: colors.primary,
+    },
+    scoreLabel: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      fontSize: 11,
+      marginTop: 2,
+    },
+    scoreDivider: {
+      width: 1,
+      height: 30,
+      backgroundColor: colors.divider,
+    },
+  });

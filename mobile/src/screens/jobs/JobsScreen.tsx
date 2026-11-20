@@ -12,7 +12,7 @@ import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { MainTabParamList, RootStackParamList } from '../../types/navigation';
 import { OpportunityCategory, WorkMode } from '../../types/models';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography, useThemedStyles, ColorPalette } from '../../theme';
 import { AppHeader } from '../../components/common/AppHeader';
 import { SearchField } from '../../components/common/SearchField';
 import { FilterChips } from '../../components/common/FilterChips';
@@ -44,6 +44,7 @@ const CATEGORIES: (OpportunityCategory | 'All')[] = [
 const WORK_MODES: (WorkMode | 'All')[] = ['All', 'Remote', 'Hybrid', 'On-site'];
 
 export const JobsScreen: React.FC<Props> = ({ navigation, route }) => {
+  const { styles, colors } = useThemedStyles(createStyles);
   const [showWorkModeFilter, setShowWorkModeFilter] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -76,10 +77,6 @@ export const JobsScreen: React.FC<Props> = ({ navigation, route }) => {
 
   return (
     <View style={styles.container}>
-      {/* 
-        Jobs Header:
-        Title: Explore Opportunities on the same row as header actions
-      */}
       <AppHeader
         title="Explore Opportunities"
         onBookmarkPress={() => navigation.navigate('SavedOpportunities')}
@@ -181,61 +178,62 @@ export const JobsScreen: React.FC<Props> = ({ navigation, route }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  searchSection: {
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[3],
-    paddingBottom: spacing[1],
-  },
-  subFilterSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-    backgroundColor: colors.surfaceMuted,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  subFilterLabel: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '600',
-    marginRight: spacing[2],
-  },
-  workModeChips: {
-    flexDirection: 'row',
-    gap: spacing[2],
-    flexWrap: 'wrap',
-  },
-  modeChip: {
-    paddingVertical: 2,
-    paddingHorizontal: spacing[2],
-    borderRadius: radii.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  modeChipSelected: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.primary,
-  },
-  modeText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  modeTextSelected: {
-    color: colors.primary,
-    fontWeight: '600',
-  },
-  categoriesRow: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  listContent: {
-    flexGrow: 1,
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    searchSection: {
+      paddingHorizontal: spacing[4],
+      paddingTop: spacing[3],
+      paddingBottom: spacing[1],
+    },
+    subFilterSection: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[2],
+      backgroundColor: colors.surfaceMuted,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    subFilterLabel: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      fontWeight: '600',
+      marginRight: spacing[2],
+    },
+    workModeChips: {
+      flexDirection: 'row',
+      gap: spacing[2],
+      flexWrap: 'wrap',
+    },
+    modeChip: {
+      paddingVertical: 2,
+      paddingHorizontal: spacing[2],
+      borderRadius: radii.sm,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    modeChipSelected: {
+      backgroundColor: colors.primarySoft,
+      borderColor: colors.primary,
+    },
+    modeText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    modeTextSelected: {
+      color: colors.primary,
+      fontWeight: '600',
+    },
+    categoriesRow: {
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    listContent: {
+      flexGrow: 1,
+    },
+  });

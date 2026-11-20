@@ -9,7 +9,9 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../../types/navigation';
-import { colors, radii, spacing, typography } from '../../theme';
+import { radii, spacing, typography } from '../../theme';
+import { useTheme, useThemedStyles } from '../../theme/ThemeContext';
+import { ColorPalette } from '../../theme/colors';
 import { AppHeader } from '../../components/common/AppHeader';
 import { StatusBadge } from '../../components/common/StatusBadge';
 import { Icon } from '../../components/common/Icon';
@@ -22,6 +24,9 @@ import { BackendAssessment } from '../../services/assessmentService';
 type Props = NativeStackScreenProps<RootStackParamList, 'AssessmentList'>;
 
 export const AssessmentListScreen: React.FC<Props> = ({ navigation }) => {
+  const { colors } = useTheme();
+  const styles = useThemedStyles(createStyles);
+
   const {
     assessments,
     myAttempts,
@@ -149,105 +154,106 @@ export const AssessmentListScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  listContent: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
-  },
-  attemptsSection: {
-    marginBottom: spacing[3],
-  },
-  sectionTitle: {
-    ...typography.label,
-    color: colors.textSecondary,
-    marginBottom: spacing[2],
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  attemptCard: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: radii.md,
-    padding: spacing[3],
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginBottom: spacing[2],
-  },
-  attemptTitle: {
-    ...typography.body,
-    fontWeight: '600',
-    color: colors.text,
-    marginBottom: 4,
-  },
-  scoreRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  scoreText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  card: {
-    backgroundColor: colors.surface,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing[4],
-    marginBottom: spacing[3],
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing[2],
-  },
-  durationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  durationText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    fontSize: 12,
-  },
-  cardTitle: {
-    ...typography.cardTitle,
-    color: colors.text,
-    fontSize: 16,
-    marginBottom: 4,
-  },
-  cardDesc: {
-    ...typography.bodySmall,
-    color: colors.textSecondary,
-    marginBottom: spacing[3],
-    lineHeight: 18,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    paddingTop: 10,
-  },
-  questionsInfo: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  startRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  startText: {
-    ...typography.label,
-    color: colors.primary,
-    fontSize: 13,
-  },
-});
+const createStyles = (colors: ColorPalette) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    listContent: {
+      paddingHorizontal: spacing[4],
+      paddingVertical: spacing[3],
+    },
+    attemptsSection: {
+      marginBottom: spacing[3],
+    },
+    sectionTitle: {
+      ...typography.label,
+      color: colors.textSecondary,
+      marginBottom: spacing[2],
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    attemptCard: {
+      backgroundColor: colors.surfaceElevated,
+      borderRadius: radii.md,
+      padding: spacing[3],
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: spacing[2],
+    },
+    attemptTitle: {
+      ...typography.body,
+      fontWeight: '600',
+      color: colors.textPrimary,
+      marginBottom: 4,
+    },
+    scoreRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    scoreText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      fontWeight: '500',
+    },
+    card: {
+      backgroundColor: colors.surface,
+      borderRadius: radii.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+      padding: spacing[4],
+      marginBottom: spacing[3],
+    },
+    cardHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: spacing[2],
+    },
+    durationRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+    },
+    durationText: {
+      ...typography.caption,
+      color: colors.textSecondary,
+      fontSize: 12,
+    },
+    cardTitle: {
+      ...typography.cardTitle,
+      color: colors.textPrimary,
+      fontSize: 16,
+      marginBottom: 4,
+    },
+    cardDesc: {
+      ...typography.bodySmall,
+      color: colors.textSecondary,
+      marginBottom: spacing[3],
+      lineHeight: 18,
+    },
+    cardFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      borderTopWidth: 1,
+      borderTopColor: colors.divider,
+      paddingTop: 10,
+    },
+    questionsInfo: {
+      ...typography.caption,
+      color: colors.textSecondary,
+    },
+    startRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 2,
+    },
+    startText: {
+      ...typography.label,
+      color: colors.primary,
+      fontSize: 13,
+    },
+  });

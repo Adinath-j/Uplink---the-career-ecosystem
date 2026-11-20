@@ -94,6 +94,7 @@ export async function prefetchPostAuthData(): Promise<void> {
       }),
       useProfileStore.getState().fetchProfile(),
       useMessagingStore.getState().fetchConversations(),
+      useMessagingStore.getState().initSocket(),
     ]);
   } catch (err) {
     if (__DEV__) console.warn('[Prefetch] Post-auth prefetch error:', err);

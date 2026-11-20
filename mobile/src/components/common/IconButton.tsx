@@ -1,7 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, StyleSheet, ViewStyle } from 'react-native';
 import { Icon, IconName } from './Icon';
-import { colors, radii } from '../../theme';
+import { radii, useTheme } from '../../theme';
 
 interface IconButtonProps {
   icon: IconName;
@@ -18,10 +18,13 @@ export const IconButton: React.FC<IconButtonProps> = ({
   onPress,
   accessibilityLabel,
   size = 20,
-  color = colors.text,
+  color,
   style,
   disabled = false,
 }) => {
+  const { colors } = useTheme();
+  const iconColor = color || colors.text;
+
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -33,7 +36,7 @@ export const IconButton: React.FC<IconButtonProps> = ({
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       style={[styles.button, disabled && styles.disabled, style]}
     >
-      <Icon name={icon} size={size} color={disabled ? colors.textMuted : color} />
+      <Icon name={icon} size={size} color={disabled ? colors.textMuted : iconColor} />
     </TouchableOpacity>
   );
 };

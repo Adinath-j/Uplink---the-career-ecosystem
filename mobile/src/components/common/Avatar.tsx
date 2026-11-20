@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
-import { colors } from '../../theme';
+import { useTheme } from '../../theme';
 
 interface AvatarProps {
   name: string;
@@ -13,6 +13,8 @@ export const Avatar: React.FC<AvatarProps> = ({
   imageUrl,
   size = 36,
 }) => {
+  const { colors } = useTheme();
+
   const getInitials = (text: string) => {
     if (!text) return 'U';
     const parts = text.trim().split(' ');
@@ -30,7 +32,12 @@ export const Avatar: React.FC<AvatarProps> = ({
         source={{ uri: imageUrl }}
         style={[
           styles.image,
-          { width: size, height: size, borderRadius: size / 2 },
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            backgroundColor: colors.surfaceMuted,
+          },
         ]}
       />
     );
@@ -44,12 +51,14 @@ export const Avatar: React.FC<AvatarProps> = ({
           width: size,
           height: size,
           borderRadius: size / 2,
+          backgroundColor: colors.surfaceMuted,
+          borderColor: colors.border,
         },
       ]}
       accessibilityRole="image"
       accessibilityLabel={`Avatar of ${name}`}
     >
-      <Text style={[styles.initials, { fontSize }]}>
+      <Text style={[styles.initials, { fontSize, color: colors.primary }]}>
         {getInitials(name)}
       </Text>
     </View>
@@ -58,18 +67,13 @@ export const Avatar: React.FC<AvatarProps> = ({
 
 const styles = StyleSheet.create({
   fallback: {
-    backgroundColor: colors.surfaceMuted,
     borderWidth: 1,
-    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   initials: {
-    color: colors.primary,
     fontWeight: '700',
     letterSpacing: -0.2,
   },
-  image: {
-    backgroundColor: colors.surfaceMuted,
-  },
+  image: {},
 });

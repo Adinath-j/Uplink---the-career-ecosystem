@@ -121,5 +121,70 @@ describe('AuthService', () => {
       expect(res.data?.user.fullName).toBe('New Student');
     });
   });
+
+  describe('verifyEmail', () => {
+    test('sends email and otp to /auth/verify-email and stores session', async () => {
+      const mockPost = jest.spyOn(apiClient, 'post').mockResolvedValueOnce({
+        success: true,
+        data: {
+          token: 'otp_verified_token',
+          refreshToken: 'otp_verified_refresh',
+          type: 'Bearer',
+          id: 'user_otp_123',
+          email: 'otp@campus.edu',
+          fullName: 'Verified Student',
+          roles: ['ROLE_STUDENT'],
+          isVerified: true,
+        },
+        statusCode: 200,
+      });
+
+      const res = await authService.verifyEmail({
+        email: 'otp@campus.edu',
+        otp: '123456',
+      });
+
+      expect(mockPost).toHaveBeenCalledWith('/auth/verify-email', {
+        email: 'otp@campus.edu',
+        otp: '123456',
+      });
+      expect(res.success).toBe(true);
+      expect(res.data?.token).toBe('otp_verified_token');
+      expect(res.data?.user.isVerified).toBe(true);
+    });
+
+    test('handles invalid otp verification error', async () => {
+      jest.spyOn(apiClient, 'post').mockResolvedValueOnce({
+        success: false,
+        error: 'Invalid verification code. 4 attempt(s) remaining.',
+        statusCode: 400,
+      });
+
+      const res = await authService.verifyEmail({
+        email: 'otp@campus.edu',
+        otp: '000000',
+      });
+
+      expect(res.success).toBe(false);
+      expect(res.error).toContain('Invalid verification code');
+    });
+  });
+
+  describe('resendVerification', () => {
+    test('posts email to /auth/resend-verification', async () => {
+      const mockPost = jest.spyOn(apiClient, 'post').mockResolvedValueOnce({
+        success: true,
+        data: 'Verification code sent to resend@campus.edu',
+        statusCode: 200,
+      });
+
+      const res = await authService.resendVerification('resend@campus.edu');
+
+      expect(mockPost).toHaveBeenCalledWith('/auth/resend-verification', {
+        email: 'resend@campus.edu',
+      });
+      expect(res.success).toBe(true);
+    });
+  });
 });
 

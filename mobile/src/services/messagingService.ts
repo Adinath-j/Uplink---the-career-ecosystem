@@ -55,6 +55,8 @@ export interface UserSearchResult {
   id: string;
   fullName: string;
   email: string;
+  role?: string;
+  avatarUrl?: string;
 }
 
 export interface SpringPage<T> {

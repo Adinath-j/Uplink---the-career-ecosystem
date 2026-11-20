@@ -112,7 +112,7 @@ class WebSocketService {
       try {
         if (ENV.DEBUG_LOGGING) console.log(`[WebSocket] Connecting to ${wsUrl}...`);
         // Pass Authorization header on the initial HTTP Upgrade handshake for Spring Security
-        this.ws = new (WebSocket as any)(wsUrl, null, {
+        this.ws = new (WebSocket as any)(wsUrl, [], {
           headers: {
             Authorization: `Bearer ${token}`,
           },
